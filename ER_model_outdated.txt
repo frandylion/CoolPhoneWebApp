@@ -1,0 +1,54 @@
+user
+- user_id <serial> (pk)
+- user_last_name <varchar>
+- user_first_name <varchar>
+- password <varchar>
+
+user_plan
+- user_id <int> {fk: user}
+- plan_type <varchar> {fk: plan}
+- payment_type <varchar> {fk: plan}
+
+call_log
+- call_id <serial> (pk)
+- user_id <int> {fk: user}
+- duration <decimal>
+- call_date_time <datetime>
+- call_type <varchar> {fk: call_type} [local, long-distance]
+
+data_log
+- user_id <int> (pk) {fk: user}
+- start_date <date> (pk)
+- end_date <date>
+- data_used_mib <int>
+
+call_type
+- type_name <varchar> (pk) [local, long-distance]
+- cost_per_minute <decimal>
+
+plan
+- plan_type <varchar> (pk) [basic, premium]
+- payment_type <varchar> (pk) [pre-paid, post-paid]
+- call_limit_min <int>
+- data_limit_mib <int>
+- data_cost <decimal> [total monthly data cost]
+
+bill
+- bill_id <int> (serial)
+- user_id <int> {fk: user}
+- due_date <date>
+- balance_due <decimal>
+- plan_type <varchar> {fk: plan}
+- payment_type <varchar> {fk: plan}
+
+bank
+- user_id <int> (pk) {fk: user}
+- bank_account_num <int> [pdf says we need 'basic bank info']
+- card_num <int>
+- balance <int>
+
+transaction
+- transaction_id <serial> (pk)
+- bill_id <int> {fk: bill}
+- paid_date <date>
+- new_balance <decimal>
