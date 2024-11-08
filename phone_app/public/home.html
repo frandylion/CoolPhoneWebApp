@@ -3,13 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CoolPhoneApp - Home</title>
+    <title>Welcome back to CoolPhoneApp!</title>
     <script>
+
+        async function getTransactions() {
+                const response = await fetch(`http://localhost:3000/transaction`);
+                const transactions = await response.json();
+                const table = document.getElementById('transactionTable');
+                table.innerHTML = '';
+
+                transactions.forEach(transaction => {
+                    const row = `
+                        <tr>
+                            <td>${transaction.user_id}</td>
+                            <td>${transaction.transaction_id}</td>
+                            <td>${transaction.transaction_date}</td>
+                            <td>${transaction.transaction_type}</td>
+                            <td>${transaction.amount}</td>
+                        </tr>
+                    `;
+                    table.innerHTML += row;
+                });
+        }
+
+        async function getUserTotalAmount() {
+            try {
+                const response = await fetch(`http://localhost:3000/transaction/sum`);
+                const data = await response.json();
+
+                const totalAmountElement = document.getElementById('userTotalAmount');
+                if (data && data.total_amount !== undefined) {
+                    const formattedAmount = Number(data.total_amount || 0).toFixed(2);
+                    // the negatives and postives values are messed up and need to be resolved for phase two
+                    // for phase 2 we could display the user's name instead of id with a join query
+                    totalAmountElement.textContent = `account ${data.user_id}: balance due = $${formattedAmount}`;
+                } else {
+                    totalAmountElement.textContent = `account ${data.user_id}: balance due = $0.00`;
+                }
+            } catch (error) {
+                console.error('error', error);
+                const totalAmountElement = document.getElementById('userTotalAmount');
+            }
+        }
+
+        async function makePayment() {
+            const paymentAmount = document.getElementById('paymentAmount').value;
+            const user_id = await getUser().user_id;
+
+            const response = await fetch('http://localhost:3000/make_payment', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({payment_amount: parseFloat(paymentAmount)})
+            });
+
+            const result = await response.json();
+            document.getElementById('paymentStatus').textContent = result.message;
+        }
+
+        async function getCallLog() {
+            const response = await fetch(`http://localhost:3000/call_log`);
+            const calls = await response.json();
+            const table = document.getElementById('callTable');
+            table.innerHTML = '';
+
+            calls.forEach(call_log => {
+                const row = `
+                    <tr>
+                        <td>${call_log.user_id}</td>
+                        <td>${call_log.call_id}</td>
+                        <td>${call_log.duration}</td>
+                        <td>${call_log.call_date_time}</td>
+                        <td>${call_log.call_type}</td>
+                     </tr>
+                `;
+                table.innerHTML += row;
+            });
+        }
+
+        async function getUser() {
+            const response = await fetch(`http://localhost:3000/user`);
+            return await response.json();
+        }
+
+        window.onload = function() {
+            getTransactions();
+            getUserTotalAmount();
+            getCallLog();
+        };
     </script>
 </head>
 <body>
 
-    <h1>Welcome to CoolPhoneApp!</h1>
+    <h1>User Transactions</h1>
+    <h2 id="userTotalAmount">Total Amount for User</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>User ID</th>
+                <th>Transaction ID</th>
+                <th>Transaction Date</th>
+                <th>Transaction Type</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody id="transactionTable"></tbody>
+    </table>
+
+    <form id="paymentForm">
+        <label htmlFor="paymentAmount">Payment Amount:</label>
+        <input type="number" id="paymentAmount" name="paymentAmount" required>
+        <button type="button" onClick="makePayment()">Submit Payment</button>
+    </form>
+
+    <p id="paymentStatus"></p>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>User ID</th>
+                <th>Call ID</th>
+                <th>Duration</th>
+                <th>Date</th>
+                <th>call type</th>
+            </tr>
+        </thead>
+        <tbody id="callTable"></tbody>
+    </table>
 
 </body>
 </html>

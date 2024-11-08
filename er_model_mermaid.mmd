@@ -1,0 +1,81 @@
+---
+title: "CoolPhoneApp ER Model"
+---
+
+erDiagram
+    users {
+        int user_id
+        varchar username
+        varchar password
+        varchar user_last_name
+        varchar user_first_name
+        bigint phone_number
+    }
+
+    users ||--o{ call_log : "logs calls to"
+    users ||--o{ data_log : "logs data usage to"
+    users ||--|| bank : "has"
+    users ||--o{ transaction : "makes"
+    
+    user_plan {
+        int user_id
+        varchar plan_type
+        varchar payment_type
+    }
+    user_plan }o--|| plan : "has"
+    
+    call_log {
+        int call_id
+        int user_id
+        decimal duration
+        timestamp call_date_time
+        varchar call_type
+        bigint num_called
+    }
+    call_log }o--|| call_type : "has"
+    
+    data_log {
+        int user_id
+        date start_date
+        date end_date
+        int monthly_data_mib
+        int data_used_mib
+    }
+
+    data_log }o--|| plan : "tracks data limit"
+    
+    call_type {
+        varchar type_name
+        decimal cost_per_minute
+    }
+    
+    plan {
+        varchar plan_type
+        varchar payment_type
+        int call_limit_min
+        int data_limit_mib
+        decimal data_cost
+    }
+    
+    bank {
+        int user_id
+        int bank_account_num
+        int card_num
+        decimal balance
+    }
+
+    bank ||--o{ transaction : "derives balance"
+    
+    transaction {
+        int transaction_id
+        int user_id
+        date transaction_date
+        varchar transaction_type
+        decimal amount
+    }
+    
+    transaction ||--|{ call_log : "calculates amount"
+    transaction ||--|{ user_plan : "calculates amount"
+
+    %% has to go down here to avoid line crossing
+    users ||--|| user_plan : "has"
