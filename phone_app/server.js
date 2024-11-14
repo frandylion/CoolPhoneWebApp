@@ -127,7 +127,7 @@ app.get('/transaction/sum/', async (req, res) => {
         res.status(500).json({ error: 'Error calculating sum' });
     }
 });
-
+//the function to make a payment
 app.post('/make_payment', async (req, res) => {
     const user_id = req.session.user_id;
     const payment_amount = req.body;
