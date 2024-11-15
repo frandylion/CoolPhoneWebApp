@@ -1,4 +1,4 @@
--- Creation script for the phone database.
+-- Initialization script for the phone data tables.
 
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS user_plan CASCADE;
@@ -24,7 +24,7 @@ PRIMARY KEY (user_id));
 INSERT INTO users VALUES (default, 'jboyyy1', 'yassid099', 'johnson', 'tony', 2818293287);
 INSERT INTO users VALUES (default, 'mimimi', 'beepbepp028', 'mike', 'hawk', 8322220000);
 INSERT INTO users VALUES (default, 'bignets99', 'stinksopp29', 'philip', 'farg', 8325693016);
-INSERT INTO users VALUES (default, 'bisniz', 'shodleo098', 'bis', 'boy', 8322769301);
+INSERT INTO users VALUES (default, 'bisniz', 'shodleo098', 'bis', 'bob', 8322769301);
 INSERT INTO users VALUES (default, 'asstrid123', 'foutyfiv2566', 'erin', 'assterd', 8322229301);
 
 
@@ -137,3 +137,5 @@ INSERT INTO transaction VALUES (default, 2, '2024-11-02', 'charge', -50.00);
 INSERT INTO transaction VALUES (default, 1, '2024-11-03', 'charge', -25.50);
 INSERT INTO transaction VALUES (default, 3, '2024-11-04', 'deposit', 150.00);
 INSERT INTO transaction VALUES (default, 2, '2024-11-05', 'deposit', 75.00);
+INSERT INTO transaction VALUES (default, 4, '2024-11-05', 'deposit', 115.00);
+INSERT INTO transaction VALUES (default, 4, '2024-11-05', 'charge', -35.00);

@@ -1,6 +1,12 @@
 # Node.js
 node_modules/
 
+# PostgreSQL
+.pg/
+
+# VSCode
+.vscode/
+
 # Logs
 logs
 *.log
@@ -27,3 +33,7 @@ logs
 
 # OS
 .DS_Store
+
+# Nix files
+*.nix
+

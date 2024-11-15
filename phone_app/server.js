@@ -130,7 +130,7 @@ app.get('/transaction/sum/', async (req, res) => {
 //the function to make a payment
 app.post('/make_payment', async (req, res) => {
     const user_id = req.session.user_id;
-    const payment_amount = req.body;
+    const payment_amount = req.body.payment_amount;
 
     try {
         await pool.query('BEGIN');
@@ -140,6 +140,7 @@ app.post('/make_payment', async (req, res) => {
         );
 
         const userBalance = balanceResult.rows[0].balance;
+
         if (userBalance < payment_amount) {
             return res.status(400).json({ message: 'card declined' });
         }
@@ -181,7 +182,7 @@ app.get('/user', async (req, res) => {
 
     try {
         const result = await pool.query('SELECT * FROM users WHERE user_id = $1', [user_id]);
-        res.json(result.rows);
+        res.json(result.rows[0]);
     } catch (err) {
         console.error('error ', error);
         res.sendStatus(500);
