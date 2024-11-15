@@ -21,7 +21,7 @@ Instructions for setup
 Instructions for use:
 1. Open the webapp in a browser with the address `localhost:3000`.
 2. Login with the username and password of one of the users in the database:
-     for this example use username: `bisniz` and password: `shodleo098`
+      e.g. username: `bisniz` and password: `shodleo098`
 3. You can now view the tables and balance. You can also submit payments to the transaction table.
 
 
