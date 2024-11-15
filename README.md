@@ -17,27 +17,13 @@ Instructions for setup
   3. Start the server:
       `node server.js`
 
+
 Instructions for use:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+1. Open the webapp in a browser with the address `localhost:3000`.
+2. Login with the username and password of one of the users in the database:
+     for this example use username: `bisniz` and password: `shodleo098`
+3. You can now view the tables and balance. You can also submit payments to the transaction table.
 
 
 ***REMOVED***
-
-Server files can be found in phone_app/server.js, and each web page file can be found in the phone_app/public directory. The server accesses a database called 'phone' on localhost and the code for generating the tables in that database can be found in phone.sql. The ER model is described in er_model.png which is generated using the mermaid script er_model_mermaid.mmd.
 
