@@ -1,4 +1,4 @@
-*Instructions for setup*
+**Instructions for setup:**
 
 Setup the database:  
   1. Starting in the base directory (the one that contains this file), open the postgreSQL cli.
@@ -19,7 +19,7 @@ Setup the server:
       `node server.js`
 
 
-*Instructions for use:*
+**Instructions for use:**
 1. Open the webapp in a browser with the address `localhost:3000`.
 2. Login with the username and password of one of the users in the database:
       e.g. username: `bisniz` and password: `shodleo098`
