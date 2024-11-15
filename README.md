@@ -1,5 +1,5 @@
-Instructions for setup
-  Setup the database:  
+*Instructions for setup*
+Setup the database:  
   1. Starting in the base directory (the one that contains this file), open the postgreSQL cli.
   2. Initialiaze the `phone` database using the provided `database.sql` script:
       `\i database.sql`
@@ -10,7 +10,7 @@ Instructions for setup
   7. Optionally, use the `\dt` command to ensure the tables were created.
   8. You can now exit the postgreSQL cli.
 
-  Setup the server:
+Setup the server:
   1. Enter the `phone_app/` directory.
   2. Install Node.js dependencies using `npm`:
       `npm install`
@@ -18,7 +18,7 @@ Instructions for setup
       `node server.js`
 
 
-Instructions for use:
+*Instructions for use:*
 1. Open the webapp in a browser with the address `localhost:3000`.
 2. Login with the username and password of one of the users in the database:
       e.g. username: `bisniz` and password: `shodleo098`
