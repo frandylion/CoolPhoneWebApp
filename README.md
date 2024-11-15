@@ -29,6 +29,8 @@ Setup the server:
 ***REMOVED***
 
 Important files:
+- README.md
+- er_model.png
 - phone_app/server.js
 - phone_app/public/login.html
 - phone_app/public/home.html
