@@ -1,4 +1,5 @@
 *Instructions for setup*
+
 Setup the database:  
   1. Starting in the base directory (the one that contains this file), open the postgreSQL cli.
   2. Initialiaze the `phone` database using the provided `database.sql` script:
