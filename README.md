@@ -26,12 +26,12 @@ Setup the server:
 3. You can now view the tables and balance. You can also submit payments to the transaction table.
 
 
-***REMOVED***
-
-Important files:
+**Important files:**
 - README.md
 - er_model.png
 - phone_app/server.js
 - phone_app/public/login.html
 - phone_app/public/home.html
 
+
+***REMOVED***
