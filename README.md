@@ -28,3 +28,8 @@ Setup the server:
 
 ***REMOVED***
 
+Important files:
+- phone_app/server.js
+- phone_app/public/login.html
+- phone_app/public/home.html
+
