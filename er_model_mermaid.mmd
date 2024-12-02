@@ -1,3 +1,4 @@
+%% mmdc -i er_model_mermaid.mmd -o er_model.png --scale 4
 ---
 title: "CoolPhoneApp ER Model"
 ---
@@ -10,6 +11,7 @@ erDiagram
         varchar user_last_name
         varchar user_first_name
         bigint phone_number
+        bool admin
     }
 
     users ||--o{ call_log : "logs calls to"
