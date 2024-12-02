@@ -18,14 +18,15 @@ password VARCHAR (30),
 user_last_name VARCHAR (30),
 user_first_name VARCHAR (30),
 phone_number BIGINT,
+admin BOOL,
 PRIMARY KEY (user_id));
 
 -- data
-INSERT INTO users VALUES (default, 'jboyyy1', 'yassid099', 'johnson', 'tony', 2818293287);
-INSERT INTO users VALUES (default, 'mimimi', 'beepbepp028', 'mike', 'hawk', 8322220000);
-INSERT INTO users VALUES (default, 'bignets99', 'stinksopp29', 'philip', 'farg', 8325693016);
-INSERT INTO users VALUES (default, 'bisniz', 'shodleo098', 'bis', 'bob', 8322769301);
-INSERT INTO users VALUES (default, 'asstrid123', 'foutyfiv2566', 'erin', 'assterd', 8322229301);
+INSERT INTO users VALUES (default, 'jboyyy1', 'yassid099', 'johnson', 'tony', 2818293287, false);
+INSERT INTO users VALUES (default, 'mimimi', 'beepbepp028', 'mike', 'hawk', 8322220000, false);
+INSERT INTO users VALUES (default, 'bignets99', 'stinksopp29', 'philip', 'farg', 8325693016, false);
+INSERT INTO users VALUES (default, 'bisniz', 'shodleo098', 'bis', 'bob', 8322769301, true);
+INSERT INTO users VALUES (default, 'asstrid123', 'foutyfiv2566', 'erin', 'assterd', 8322229301, false);
 
 
 -- user_plan
