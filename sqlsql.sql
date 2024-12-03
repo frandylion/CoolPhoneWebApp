@@ -155,7 +155,7 @@ app.get('/searchUsers', async (req, res) => {
         saveSQL(sqlArray);
         return res.json(searchResult.rows);
     } catch (err) {
-        console.error('Error:', err);
+        console.error('error', err);
         await client.query('ROLLBACK');
         sqlArray.push('ROLLBACK');
         saveSQL(sqlArray);
@@ -219,7 +219,91 @@ app.post('/payBills', async (req, res) => {
 
         return res.json({ success: true, message: 'successful payment' });
     } catch (err) {
-        console.error('Error:', err);
+        console.error('error', err);
+        await client.query('ROLLBACK');
+        sqlArray.push('ROLLBACK');
+        saveSQL(sqlArray);
+        res.sendStatus(500);
+    } finally {
+        client.release();
+    }
+});
+
+app.get('/userTransactions', async (req, res) => {
+    const { user_id } = req.query; // Get user_id from query parameters
+    const client = await pool.connect();
+    const sqlArray = [];
+
+    try {
+        await client.query('BEGIN');
+        sqlArray.push('BEGIN');
+
+       --fetches transactions and joins bill table
+        const transactionsQuery = `
+            SELECT 
+                t.bill_id,
+                b.cost,
+                b.due_date,
+                t.transaction_date
+            FROM 
+                transaction t
+            JOIN 
+                bill b ON t.bill_id = b.bill_id
+            WHERE 
+                b.user_id = $1
+        `;
+        const result = await client.query(transactionsQuery, [user_id]);
+        sqlArray.push(transactionsQuery);
+
+        await client.query('COMMIT');
+        sqlArray.push('COMMIT');
+        saveSQL(sqlArray);
+
+        return res.json(result.rows);
+    } catch (err) {
+        console.error('error', err);
+        await client.query('ROLLBACK');
+        sqlArray.push('ROLLBACK');
+        saveSQL(sqlArray);
+        res.sendStatus(500);
+    } finally {
+        client.release();
+    }
+});
+app.get('/userCalls', async (req, res) => {
+    const { user_id } = req.query; 
+    const client = await pool.connect();
+    const sqlArray = [];
+
+    try {
+        await client.query('BEGIN');
+        sqlArray.push('BEGIN');
+
+        --grabbing call log records
+        const callsQuery = `
+            SELECT 
+                cl.call_id,
+                cl.call_date_time AS date,
+                cl.duration,
+                ct.type_name,
+                (cl.duration * ct.cost_per_minute) AS cost
+            FROM 
+                call_log cl
+            JOIN 
+                call_type ct ON cl.call_type = ct.call_type_id
+            WHERE 
+                cl.user_id = $1;
+        `;
+        const result = await client.query(callsQuery, [user_id]);
+        sqlArray.push(callsQuery);
+
+        await client.query('COMMIT');
+        sqlArray.push('COMMIT');
+        saveSQL(sqlArray);
+
+        return res.json(result.rows);
+    } catch (err) {
+        console.error('error', err);
         await client.query('ROLLBACK');
         sqlArray.push('ROLLBACK');
         saveSQL(sqlArray);
