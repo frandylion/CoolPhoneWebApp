@@ -312,3 +312,46 @@ app.get('/userCalls', async (req, res) => {
         client.release();
     }
 });
+
+app.get('/callsReport', async (req, res) => {
+    const client = await pool.connect();
+    const sqlArray = [];
+
+    try {
+        await client.query('BEGIN');
+        sqlArray.push('BEGIN');
+
+        const callsQuery = `
+            SELECT 
+                SUM(cl.duration) AS total_minutes,
+                ct.type_name AS call_type,
+                ROUND((SUM(cl.duration) * 100.0) / NULLIF(SUM(SUM(cl.duration)) OVER (), 0), 2) AS percentage_by_type,
+                ROUND(AVG(cl.duration) OVER (), 2) AS average_call_duration
+            FROM 
+                call_log cl
+            JOIN 
+                call_type ct ON cl.call_type = ct.call_type_id
+            GROUP BY 
+                ct.type_name;
+        `;
+        const result = await client.query(callsQuery);
+        sqlArray.push(callsQuery);
+
+        await client.query('COMMIT');
+        sqlArray.push('COMMIT');
+        saveSQL(sqlArray);
+
+        return res.json(result.rows);
+    } catch (err) {
+        console.error('error', err);
+        await client.query('ROLLBACK');
+        sqlArray.push('ROLLBACK');
+        saveSQL(sqlArray);
+        res.sendStatus(500);
+    } finally {
+        client.release();
+    }
+});
+
+
+
