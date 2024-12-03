@@ -42,7 +42,7 @@ app.get('/adminView', async (req, res) => {
 });
 
 
-Add a table for bills
+
 -- table to show all bills
 app.get('/userBills', async (req, res) => {
     const user_id = req.session.user_id;
@@ -80,3 +80,88 @@ app.get('/userBills', async (req, res) => {
         client.release();
     }
 });
+
+app.get('revenueReport', async (req, res) => {
+    const client = await pool.connect();
+    const sqlArray = [];
+
+    try {
+        await client.query('BEGIN');
+        sqlArray.push('BEGIN');
+
+      --total revenue
+        const revenueQuery = 'SELECT SUM(cost) AS total_revenue FROM bill WHERE paid = true';
+        const totalRevenue = await client.query(revenueQuery);
+        sqlArray.push(revenueQuery);
+
+        -- average revenue per user
+        const revenueQuery = `
+            SELECT user_id, AVG(cost) AS avg_revenue
+            FROM bill
+            WHERE paid = true
+            GROUP BY user_id
+        `;
+        const avgRevenue = await client.query(revenueQuery);
+        sqlArray.push(revenueQuery);
+
+        -- unpaid bills
+        const billsQuery = 'SELECT SUM(cost) AS outstanding_bills FROM bill WHERE paid = false';
+        const billsResult = await client.query(billsQuery);
+        sqlArray.push(billsQuery);
+
+        await client.query('COMMIT');
+        sqlArray.push('COMMIT');
+
+        saveSQL(sqlArray);
+
+        return res.json({
+            totalRevenue: totalRevenue.rows[0].total_revenue || 0,
+            avgRevenue: avgRevenue.rows,
+            outstandingBills: outstandingBillsResult.rows[0].outstanding_bills || 0
+        });
+    } catch (err) {
+        console.error('Error:', err);
+        await client.query('ROLLBACK');
+        sqlArray.push('ROLLBACK');
+        saveSQL(sqlArray);
+        res.sendStatus(500);
+    } finally {
+        client.release();
+    }
+});
+app.get('/searchUsers', async (req, res) => {
+    const searchString = req.query.search || '';
+    const client = await pool.connect();
+    const sqlArray = [];
+
+    try {
+        await client.query('BEGIN');
+        sqlArray.push('BEGIN');
+
+        -- query to search by username
+        const searchQuery = `
+            SELECT u.username, u.password, u.plan_type, COALESCE(SUM(cl.duration), 0) AS total_call_minutes
+            FROM users u
+            LEFT JOIN call_log cl ON u.user_id = cl.user_id
+            WHERE u.username ILIKE $1
+            GROUP BY u.username, u.password, u.plan_type
+        `;
+        const searchResult = await client.query(searchQuery, [`%${searchString}%`]);
+        sqlArray.push(searchQuery);
+
+        await client.query('COMMIT');
+        sqlArray.push('COMMIT');
+
+        saveSQL(sqlArray);
+        return res.json(searchResult.rows);
+    } catch (err) {
+        console.error('Error:', err);
+        await client.query('ROLLBACK');
+        sqlArray.push('ROLLBACK');
+        saveSQL(sqlArray);
+        res.sendStatus(500);
+    } finally {
+        client.release();
+    }
+});
+
