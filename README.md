@@ -2,14 +2,16 @@
 
 Setup the database:  
   1. Starting in the base directory (the one that contains this file), open the postgreSQL cli.
-  2. Initialiaze the `phone` database using the provided `database.sql` script:
+  2. Initialize the `phone` database using the provided `database.sql` script:
       `\i database.sql`
-  5. Connect to the `phone` database as user `dbs05`:
+  3. Connect to the `phone` database as user `dbs05`:
       `\c phone dbs05`
-  6. Initialiaze the database tables using the `phone.sql` script:
+  4. Initialiaze the database tables using the `phone.sql` script:
       `\i phone.sql`
-  7. Optionally, use the `\dt` command to ensure the tables were created.
-  8. You can now exit the postgreSQL cli.
+  5. Optionally, use the `\dt` command to ensure the tables were created.
+  6. You can now exit the postgreSQL cli.
+
+### FIXME - possibly delete 3,4,5 once there is a gui button to run phone.sql. possibly just make 
 
 Setup the server:
   1. Enter the `phone_app/` directory.

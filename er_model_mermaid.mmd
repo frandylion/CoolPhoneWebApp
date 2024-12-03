@@ -1,33 +1,41 @@
-%% mmdc -i er_model_mermaid.mmd -o er_model.png --scale 4
 ---
-title: "CoolPhoneApp ER Model"
+title: "Team 05: CoolPhoneApp ER Model"
 ---
-
 erDiagram
+    %% mmdc -i er_model_mermaid.mmd -o er_model.png --scale 4
+
     users {
-        int user_id
+        int *user_id
         varchar username
         varchar password
         varchar user_last_name
         varchar user_first_name
         bigint phone_number
+        varchar phone_model
         bool admin
     }
 
-    users ||--o{ call_log : "logs calls to"
     users ||--o{ data_log : "logs data usage to"
     users ||--|| bank : "has"
+    users ||--o{ call_log : "logs calls to"
     users ||--o{ transaction : "makes"
+    users }o--|| phone : "has"
     
     user_plan {
-        int user_id
+        int *user_id
         varchar plan_type
         varchar payment_type
     }
+
     user_plan }o--|| plan : "has"
+
+    phone {
+        varchar *model
+        varchar brand
+    }
     
     call_log {
-        int call_id
+        int *call_id
         int user_id
         decimal duration
         timestamp call_date_time
@@ -37,9 +45,8 @@ erDiagram
     call_log }o--|| call_type : "has"
     
     data_log {
-        int user_id
-        date start_date
-        date end_date
+        int *user_id
+        date *date
         int monthly_data_mib
         int data_used_mib
     }
@@ -47,37 +54,42 @@ erDiagram
     data_log }o--|| plan : "tracks data limit"
     
     call_type {
-        varchar type_name
+        varchar *type_name
         decimal cost_per_minute
     }
     
     plan {
-        varchar plan_type
-        varchar payment_type
+        varchar *plan_type
+        varchar *payment_type
         int call_limit_min
         int data_limit_mib
         decimal data_cost
     }
     
     bank {
-        int user_id
+        int *user_id
         int bank_account_num
         int card_num
-        decimal balance
+        varchar bank_name
     }
-
-    bank ||--o{ transaction : "derives balance"
     
     transaction {
-        int transaction_id
-        int user_id
-        date transaction_date
-        varchar transaction_type
-        decimal amount
+        int *bill_id
+        date date_paid
     }
     
-    transaction ||--|{ call_log : "calculates amount"
-    transaction ||--|{ user_plan : "calculates amount"
+    transaction ||--|| bill : "pays bill"
+
+    bill {
+        int *bill_id
+        int user_id
+        decimal cost
+        date due_date
+        bool paid
+    }
+
+    bill ||--|{ call_log : "derives cost"
+    bill ||--|{ user_plan : "derives cost"
 
     %% has to go down here to avoid line crossing
     users ||--|| user_plan : "has"

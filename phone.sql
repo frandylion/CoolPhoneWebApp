@@ -133,9 +133,9 @@ PRIMARY KEY (plan_type, payment_type));
 
 -- data
 INSERT INTO plan VALUES ('Basic', 'Prepaid', 500, 1024, 10.00);
-INSERT INTO plan VALUES ('Basic', 'Postpaid', 500, 1024, 8.00);
+INSERT INTO plan VALUES ('Basic', 'Postpaid', NULL, 1024, 8.00);
 INSERT INTO plan VALUES ('Premium', 'Prepaid', 1000, 4096, 15.00);
-INSERT INTO plan VALUES ('Premium', 'Postpaid', 1000, 4096, 12.00);
+INSERT INTO plan VALUES ('Premium', 'Postpaid', NULL, 4096, 12.00);
 INSERT INTO plan VALUES ('Unlimited', 'Prepaid', NULL, NULL, 30.00);
 
 
@@ -143,26 +143,23 @@ INSERT INTO plan VALUES ('Unlimited', 'Prepaid', NULL, NULL, 30.00);
 CREATE TABLE bank (
 user_id INT,
 bank_account_num INT,
+bank_name VARCHAR (15),
 card_num INT,
-balance DECIMAL (10, 2),
 PRIMARY KEY (user_id));
 
 -- data
-INSERT INTO bank VALUES (1, 123456789, 987654321, 500.00);
-INSERT INTO bank VALUES (2, 234567890, 876543210, 1200.00);
-INSERT INTO bank VALUES (3, 345678901, 765432109, 300.00);
-INSERT INTO bank VALUES (4, 456789012, 654321098, 700.00);
-INSERT INTO bank VALUES (5, 567890123, 543210987, 950.00);
+INSERT INTO bank VALUES (1, 123456789, 987654321);
+INSERT INTO bank VALUES (2, 234567890, 876543210);
+INSERT INTO bank VALUES (3, 345678901, 765432109);
+INSERT INTO bank VALUES (4, 456789012, 654321098);
+INSERT INTO bank VALUES (5, 567890123, 543210987);
 
 
 -- transaction
 CREATE TABLE transaction (
-	transaction_id SERIAL,
-    user_id INT,
+	bill_id INT,
 	transaction_date DATE,
-	transaction_type VARCHAR (10),
-	amount DECIMAL (10, 2),
-	PRIMARY KEY (transaction_id));
+	PRIMARY KEY (bill_id));
 
 -- data
 INSERT INTO transaction VALUES (default, 1, '2024-11-01', 'deposit', 200.00);
@@ -193,3 +190,7 @@ INSERT INTO transaction VALUES (default, 4, '2024-05-15', 'deposit', 240.00);
 INSERT INTO transaction VALUES (default, 4, '2024-05-15', 'charge', -70.75);
 INSERT INTO transaction VALUES (default, 5, '2024-06-15', 'deposit', 450.00);
 INSERT INTO transaction VALUES (default, 5, '2024-06-15', 'charge', -135.00);
+
+
+-- bill
+CREATE TABLE bill ();
