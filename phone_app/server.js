@@ -58,19 +58,19 @@ app.post('/auth', async (req, res) => {
             'SELECT user_id, username, password FROM users WHERE username = $1',
             [username]
         );
-  
+
         // if user is found
         if (result.rows.length > 0) {
             // compare the entered password with the database
             // TODO: change this to use hashing later
             const isValidPassword = await checkPassword(password, result.rows[0].password);
-  
+
             if (isValidPassword) {
                 // auth the user
                 req.session.loggedin = true;
                 req.session.username = username;
                 req.session.user_id = result.rows[0].user_id;
-                
+
                 // redirect to home page
                 res.redirect('/home');
             } else {
@@ -112,7 +112,7 @@ app.get('/transaction', async (req, res) => {
     }
 });
 
-// Route to fetch total sum for a specified user_id
+// route to fetch total sum for a specified user_id
 app.get('/transaction/sum/', async (req, res) => {
     const user_id = req.session.user_id;
 
@@ -138,19 +138,22 @@ app.post('/make_payment', async (req, res) => {
         const balanceResult = await pool.query(
             'SELECT balance FROM bank WHERE user_id = $1 FOR UPDATE', [user_id]
         );
+         if (balanceResult.rows.length === 0) {
+            await pool.query('ROLLBACK');
+            return res.status(404).json({ message: 'user account not found' });
+        }
 
         const userBalance = balanceResult.rows[0].balance;
-
         if (userBalance < payment_amount) {
             return res.status(400).json({ message: 'card declined' });
         }
 
-        await pool.query(
+        const updateBalance = await pool.query(
             'UPDATE bank SET balance = balance - $1 WHERE user_id = $2',
             [payment_amount, user_id]
         );
 
-        await pool.query(
+         const insertTransaction = await pool.query(
             'INSERT INTO transaction (user_id, transaction_date, transaction_type, amount) VALUES ($1, NOW(), $2, $3)',
             [user_id, 'payment', -payment_amount]
         );
@@ -172,7 +175,7 @@ app.get('/call_log', async (req, res) => {
         const result = await pool.query('SELECT * FROM call_log WHERE user_id = $1', [user_id]);
         res.json(result.rows);
     } catch (err) {
-        console.error('error ', error);
+        console.error('error ', err);
         res.sendStatus(500);
     }
 });
@@ -182,9 +185,9 @@ app.get('/user', async (req, res) => {
 
     try {
         const result = await pool.query('SELECT * FROM users WHERE user_id = $1', [user_id]);
-        res.json(result.rows[0]);
+        res.json(result.rows);
     } catch (err) {
-        console.error('error ', error);
+        console.error('error ', err);
         res.sendStatus(500);
     }
 });
@@ -196,4 +199,3 @@ app.get('/user', async (req, res) => {
 app.listen(3000, () => {
     console.log('Server is running on port 3000');
 });
-

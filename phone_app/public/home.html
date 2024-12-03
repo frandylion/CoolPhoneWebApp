@@ -46,7 +46,10 @@
             }
         }
 
-        async function makePayment(paymentAmount) {
+        async function makePayment() {
+            const paymentAmount = document.getElementById('paymentAmount').value;
+            const user_id = await getUser().user_id;
+
             const response = await fetch('http://localhost:3000/make_payment', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -55,10 +58,6 @@
 
             const result = await response.json();
             document.getElementById('paymentStatus').textContent = result.message;
-
-            // reset form
-            document.paymentForm.reset();
-
             getTransactions();
             getUserTotalAmount();
         }
@@ -83,21 +82,12 @@
             });
         }
 
-        async function getWelcome() {
-            const user_json = await getUser();
-            const first_name = user_json.user_first_name;
-
-            let header = document.getElementById('welcome')
-            header.innerHTML = "Welcome back, " + first_name + "!";
-        }
-
         async function getUser() {
             const response = await fetch(`http://localhost:3000/user`);
             return await response.json();
         }
 
         window.onload = function() {
-            getWelcome();
             getTransactions();
             getUserTotalAmount();
             getCallLog();
@@ -106,7 +96,7 @@
 </head>
 <body>
 
-    <h1 id="welcome">User Transactions</h1>
+    <h1>User Transactions</h1>
     <h2 id="userTotalAmount">Total Amount for User</h2>
     <table border="1">
         <thead>
@@ -121,10 +111,10 @@
         <tbody id="transactionTable"></tbody>
     </table>
 
-    <form name="paymentForm" action="javascript:makePayment(paymentAmount.value)">
+    <form id="paymentForm">
         <label htmlFor="paymentAmount">Payment Amount:</label>
-        <input type="decimal" id="paymentAmount" name="paymentAmount" required>
-        <input type="submit" name="Submit" value="Submit Payment">
+        <input type="number" id="paymentAmount" name="paymentAmount" required>
+        <button type="button" onClick="makePayment()">Submit Payment</button>
     </form>
 
     <p id="paymentStatus"></p>
