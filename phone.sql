@@ -1,4 +1,5 @@
 -- Initialization script for the phone data tables.
+BEGIN;
 
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS user_plan CASCADE;
@@ -26,7 +27,7 @@ PRIMARY KEY (user_id));
 
 -- data
 INSERT INTO users VALUES (default, 'jboyyy1', 'yassid099', 'johnson', 'tony', 2818293287, 'Iphone 11', false);
-INSERT INTO users VALUES (default, 'mimimi', 'beepbepp028', 'mike', 'hawk', 8322220000, 'Barbie Phone', true);
+INSERT INTO users VALUES (default, 'mimimi', 'beepbepp028', 'hawk', 'mike', 8322220000, 'Barbie Phone', true);
 INSERT INTO users VALUES (default, 'bignets99', 'stinksopp29', 'philip', 'farg', 8325693016, 'Iphone 13 Max', false);
 INSERT INTO users VALUES (default, 'bisniz', 'shodleo098', 'bis', 'bob', 8322769301, 'Galaxy S24+', true);
 INSERT INTO users VALUES (default, 'asstrid123', 'foutyfiv2566', 'erin', 'assterd', 8322229301, 'Iphone 12', false);
@@ -332,3 +333,6 @@ INSERT INTO bill VALUES (default, 7, 23.79, '2024-12-05', true);
 INSERT INTO bill VALUES (default, 8, 45.00, '2024-12-05', true);
 INSERT INTO bill VALUES (default, 9, 27.94, '2024-12-05', true);
 INSERT INTO bill VALUES (default, 10, 19.64, '2024-12-05', true);
+
+
+COMMIT;

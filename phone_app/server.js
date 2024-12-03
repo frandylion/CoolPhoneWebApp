@@ -1,11 +1,23 @@
 // code provided by TA
+// Imports
 const express = require('express');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const path = require('path');
 const cors = require('cors');
+const fs = require('fs');
 
+// Constants
+const public_dir = 'public';
+const login_page = 'login.html';
+const home_page = 'home.hmtl';
+const sql_log_path = 'log.sql';
+const table_init_script = 'init_sim.sql';
+
+//  ####################
+//  ## Initialization ##
+//  ####################
 const app = express();
 app.use(cors()); // Enable CORS for cross-origin requests
 
@@ -20,7 +32,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Serve static files from the "public" directory
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, public_dir)));
 
 const pool = new Pool({
     user: 'dbs05',
@@ -31,15 +43,34 @@ const pool = new Pool({
 });
 
 app.get('/', async (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+    res.sendFile(path.join(__dirname, public_dir, login_page));
 });
 
-// ####################
-// # BEGIN LOGIN CODE #
-// ####################
+// TODO function to save sql to file
+async function saveSQL(lines) {
+    // combine the array of inputs into a multiline string
+    let output = "";
+    for (const line of lines) {
+        output += line + ';\n\n';
+    }
+    // add spacing between blocks of output for readability
+    output += '\n\n';
+
+    // append to the log file
+    fs.appendFile(sql_log_path, output, 'utf8', error => {
+        if (error) {
+            console.error(`ERROR: Failed to append to sql log file with message --> \n${error}`);
+        }
+    });
+}
+
+
+//  ###########
+//  ## Login ##
+//  ###########
 app.get('/home', async (req, res) => {
     if (req.session.loggedin) {
-        res.sendFile(path.join(__dirname, 'public', 'home.html'));
+        res.sendFile(path.join(__dirname, public_dir, home_page));
     } else {
         res.send('Please login to access this page.');
         res.end();
@@ -73,6 +104,7 @@ app.post('/auth', async (req, res) => {
                 // redirect to home page
                 res.redirect('/home');
             } else {
+                // TODO: fix bad login to not change page
                 res.send('Incorrect username and/or password.');
             }
         } else {
@@ -91,13 +123,10 @@ app.post('/auth', async (req, res) => {
 async function checkPassword(input, password) {
   return (input === password);
 }
-// ##################
-// # END LOGIN CODE #
-// ##################
 
-// ###################
-// # BEGIN HOME CODE #
-// ###################
+//  ##################
+//  ## Front Office ##
+//  ##################
 app.get('/transaction', async (req, res) => {
     const user_id = req.session.user_id;
 
@@ -125,6 +154,7 @@ app.get('/transaction/sum/', async (req, res) => {
         res.status(500).json({ error: 'Error calculating sum' });
     }
 });
+
 //the function to make a payment
 app.post('/make_payment', async (req, res) => {
     const user_id = req.session.user_id;
@@ -189,11 +219,55 @@ app.get('/user', async (req, res) => {
         res.sendStatus(500);
     }
 });
-// #################
-// # END HOME CODE #
-// #################
 
-// Start the server
-app.listen(3000, () => {
+
+//  #################
+//  ## Back Office ##
+//  #################
+
+
+//  ################
+//  ## Simulation ##
+//  ################
+app.get('/initializeTables', async (req, res) => {
+    try {
+        // read initialization script as array of queries delimited by ';'
+        const script_blocks = fs.readFileSync(table_init_script, 'utf8').split(';');
+
+        // TODO
+    }
+});
+
+
+//  ######################
+//  ## Start the server ##
+//  ######################
+let server = app.listen(3000, () => {
+    // clear the sql log if it exists
+    await clearLog();
+
     console.log('Server is running on port 3000');
 });
+
+async function clearLog() {
+    // check if the log file exists
+    fs.access(sql_log_path, fs.constants.F_OK, error => {
+        if (error) {
+            console.error(`WARNING: Skipping clearing log file with message --> \n${error}`);
+        } else {
+            // delete the file
+            fs.rm(sql_log_path, error => {
+                if (error) {
+                    // exit if the program fails to clear the file
+                    console.error(`ERROR: Failed to clear log file with message --> \n${error}\n\nExiting.`);
+                    server.close( error => {
+                        console.log('Server closed.');
+                        process.exit(error ? 1 : 0);
+                    });
+                } else {
+                    console.log('Succesfully cleared sql log file.');
+                }
+            });
+        }
+    });
+};

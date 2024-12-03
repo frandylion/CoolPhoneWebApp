@@ -172,7 +172,7 @@ app.get('/searchUsers', async (req, res) => {
 
 
 
-RAW SQL to generate all bills in a given month and year
+-- RAW SQL to generate all bills in a given month and year
 WITH
     -- REPLACE 10 AND 2024 WITH VARIABLES REPRESENTING THE GIVEN YEAR AND MONTH!!
     const_month AS (VALUES (10)),

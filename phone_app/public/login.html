@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CoolPhoneApp - Login</title>
+    <script>
+        async function initSimulation() {
+            const response = await fetch(`http://localhost:3000/initializeTables`);
+            const result = await response.json();
+        }
+    </script>
 </head>
 <body>
 
@@ -17,6 +23,14 @@
             <input type="submit" value="Login">
         </form>
     </div>
-    
+
+    <br>
+    <hr>
+
+    <div>
+        <h2>Initialize Simulation</h2>
+        <button type="button" onClick="initSimulation()">Simulate</button>
+        <p>This button populates the initial tables of the database.</p>
+    </div>
 </body>
 </html>
