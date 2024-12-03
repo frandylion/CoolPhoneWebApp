@@ -62,7 +62,6 @@ app.post('/auth', async (req, res) => {
         // if user is found
         if (result.rows.length > 0) {
             // compare the entered password with the database
-            // TODO: change this to use hashing later
             const isValidPassword = await checkPassword(password, result.rows[0].password);
 
             if (isValidPassword) {
@@ -89,7 +88,6 @@ app.post('/auth', async (req, res) => {
 });
 
 // checks the entered password against the stored password
-// TODO: change to use hashing later
 async function checkPassword(input, password) {
   return (input === password);
 }
