@@ -16,7 +16,7 @@ DROP TABLE IF EXISTS phone CASCADE;
 -- users
 CREATE TABLE users (
 user_id SERIAL,
-username VARCHAR (32),
+username VARCHAR (32) UNIQUE,
 password VARCHAR (32),
 last_name VARCHAR (32),
 first_name VARCHAR (32),
@@ -127,7 +127,7 @@ INSERT INTO call_log VALUES (default, 4, 8.60, '2024-10-03 16:45:30', 'Local', 8
 INSERT INTO call_log VALUES (default, 4, 19.75, '2024-10-16 12:10:05', 'Local', 3332221111);
 INSERT INTO call_log VALUES (default, 4, 53.20, '2024-10-27 17:15:20', 'National', 9998887777);
 INSERT INTO call_log VALUES (default, 4, 26.55, '2024-10-09 13:30:25', 'Local', 4567890123);
-INSERT INTO call_log VALUES (default, 4, 82.40, '2024-10-20 16:55:50', 'Local', 0123456789);
+INSERT INTO call_log VALUES (default, 4, 82.40, '2024-10-20 16:55:50', 'Local', 8123456789);
 INSERT INTO call_log VALUES (default, 5, 14.30, '2024-10-08 09:55:45', 'Local', 6665554444);
 INSERT INTO call_log VALUES (default, 5, 32.40, '2024-10-21 10:20:15', 'Local', 1112223333);
 INSERT INTO call_log VALUES (default, 5, 95.75, '2024-10-31 10:40:05', 'National', 7776665555);
@@ -151,7 +151,7 @@ INSERT INTO call_log VALUES (default, 8, 52.70, '2024-10-19 15:20:10', 'Local', 
 INSERT INTO call_log VALUES (default, 9, 7.25, '2024-10-02 11:45:30', 'Local', 2223334444);
 INSERT INTO call_log VALUES (default, 9, 23.15, '2024-10-13 13:10:22', 'Local', 7776665555);
 INSERT INTO call_log VALUES (default, 9, 76.55, '2024-10-27 14:40:30', 'National', 5554443333);
-INSERT INTO call_log VALUES (default, 9, 20.60, '2024-10-16 10:40:15', 'Local', 0123456789);
+INSERT INTO call_log VALUES (default, 9, 20.60, '2024-10-16 10:40:15', 'Local', 9123456789);
 INSERT INTO call_log VALUES (default, 9, 75.45, '2024-10-25 13:30:25', 'National', 5678901234);
 INSERT INTO call_log VALUES (default, 10, 15.90, '2024-10-06 15:35:40', 'Local', 8887776666);
 INSERT INTO call_log VALUES (default, 10, 37.45, '2024-10-20 08:50:15', 'Local', 3332221111);
@@ -178,7 +178,7 @@ INSERT INTO call_log VALUES (default, 4, 19.45, '2024-11-03 16:45:30', 'Local', 
 INSERT INTO call_log VALUES (default, 4, 53.80, '2024-11-16 12:10:05', 'Local', 3332221111);
 INSERT INTO call_log VALUES (default, 4, 106.55, '2024-11-27 17:15:20', 'National', 9998887777);
 INSERT INTO call_log VALUES (default, 4, 44.30, '2024-11-09 13:30:25', 'Local', 4567890123);
-INSERT INTO call_log VALUES (default, 4, 91.75, '2024-11-20 16:55:50', 'Local', 0123456789);
+INSERT INTO call_log VALUES (default, 4, 91.75, '2024-11-20 16:55:50', 'Local', 2123456789);
 INSERT INTO call_log VALUES (default, 5, 32.60, '2024-11-08 09:55:45', 'Local', 6665554444);
 INSERT INTO call_log VALUES (default, 5, 57.40, '2024-11-21 10:20:15', 'Local', 1112223333);
 INSERT INTO call_log VALUES (default, 5, 118.90, '2024-11-30 10:40:05', 'National', 7776665555);
@@ -202,7 +202,7 @@ INSERT INTO call_log VALUES (default, 8, 79.60, '2024-11-19 15:20:10', 'Local', 
 INSERT INTO call_log VALUES (default, 9, 22.50, '2024-11-02 11:45:30', 'Local', 2223334444);
 INSERT INTO call_log VALUES (default, 9, 46.80, '2024-11-13 13:10:22', 'Local', 7776665555);
 INSERT INTO call_log VALUES (default, 9, 109.25, '2024-11-27 14:40:30', 'National', 5554443333);
-INSERT INTO call_log VALUES (default, 9, 38.95, '2024-11-16 10:40:15', 'Local', 0123456789);
+INSERT INTO call_log VALUES (default, 9, 38.95, '2024-11-16 10:40:15', 'Local', 1123456789);
 INSERT INTO call_log VALUES (default, 9, 88.30, '2024-11-25 13:30:25', 'National', 5678901234);
 INSERT INTO call_log VALUES (default, 10, 33.60, '2024-11-06 15:35:40', 'Local', 8887776666);
 INSERT INTO call_log VALUES (default, 10, 59.75, '2024-11-20 08:50:15', 'Local', 3332221111);
@@ -271,7 +271,7 @@ INSERT INTO bank VALUES (6, 2345678, 1234567890123456, 'Chase');
 INSERT INTO bank VALUES (7, 4567890, 9876543210987654, 'Bank of America');
 INSERT INTO bank VALUES (8, 6789012, 5432109876543210, 'Wells Fargo');
 INSERT INTO bank VALUES (9, 8901234, 6543210987654321, 'Citibank');
-INSERT INTO bank VALUES (10, 0123456, 4321098765432109, 'US Bank');
+INSERT INTO bank VALUES (10, 1123456, 4321098765432109, 'US Bank');
 
 
 -- transaction

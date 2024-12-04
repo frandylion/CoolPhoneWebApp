@@ -7,6 +7,7 @@ const { Pool } = require('pg');
 const path = require('path');
 const cors = require('cors');
 const fsp = require('fs').promises;
+const rw = require('random-words');
 
 // Constants
 const public_dir = 'public';
@@ -712,6 +713,93 @@ app.get('/initializeTables', async (req, res) => {
         if (client) {
             client.release();
         }
+        saveSQL(sqlArray);
+    }
+});
+
+
+// generate an int of length len without 0 as the first digit
+async function randInt(len) {
+    let number = '' + (Math.floor(Math.random() * 9) + 1);
+
+    for (let i = 1; i < len; i++) {
+        number += Math.floor(Math.random() * 10);
+    }
+
+    return Number(number);
+}
+
+
+app.get('/addUser', async (req, res) => {
+    // generate user values
+    const username = rw.generate({min:2, max:3, minLength:3}).join('');
+    const password = rw.generate({min:2, max:3, minLength:3}).join('');
+    const last_name = rw.generate({max:1, minLength:6})[0];
+    const first_name = rw.generate({max:1, minLength:4})[0];
+    const phone_number = await randInt(10);
+    let phone_model; // get phone_model from available models in database
+    const admin = (Math.random() > 0.7);
+
+    // generate user bank values
+    const bank_account_num = await randInt(7);
+    const card_num = await randInt(16);
+    let bank_name; // get bank_name from existing bank names
+
+    // get plan values from database
+    let plan_type;
+    let payment_type;
+
+    const client = await pool.connect();
+    const sqlArray = [];
+
+    try {
+        await client.query('BEGIN');
+        sqlArray.push('BEGIN');
+
+        // get random phone_model
+        const randPhoneQuery = 'SELECT model FROM phone ORDER BY RANDOM() LIMIT 1';
+        phone_model = (await client.query(randPhoneQuery)).rows[0].model;
+        sqlArray.push(randPhoneQuery);
+
+        // get random plan
+        const randPlanQuery = 'SELECT plan_type, payment_type FROM plan ORDER BY RANDOM() LIMIT 1';
+        const rand_plan = (await client.query(randPlanQuery)).rows[0];
+        sqlArray.push(randPlanQuery);
+        plan_type = rand_plan.plan_type;
+        payment_type = rand_plan.payment_type;
+
+        // get random bank name
+        const randBankQuery = 'SELECT bank_name FROM bank ORDER BY RANDOM() LIMIT 1';
+        bank_name = (await client.query(randBankQuery)).rows[0].bank_name;
+        sqlArray.push(randBankQuery);
+
+        // insert user values
+        const insertUserQuery = 'INSERT INTO users VALUES (default, $1, $2, $3, $4, $5, $6, $7)';
+        const insertUserResult = await client.query(insertUserQuery, [username, password, last_name, first_name, phone_number, phone_model, admin]);
+        sqlArray.push(`INSERT INTO users VALUES (default, ${username}, ${password}, ${last_name}, ${first_name}, ${phone_number}, ${phone_model}, ${admin})`);
+
+        // get user_id
+        const idQuery = 'SELECT user_id FROM users WHERE username = $1';
+        const user_id = (await client.query(idQuery, [username])).rows[0].user_id;
+
+        // insert plan values
+        const insertPlanQuery = 'INSERT INTO user_plan VALUES ($1, $2, $3)';
+        const insertPlanResult = await client.query(insertPlanQuery, [user_id, plan_type, payment_type]);
+        sqlArray.push(`INSERT INTO user_plan VALUES (${user_id}, ${plan_type}, ${payment_type})`);
+
+        // insert bank values
+        // TODO!!
+
+        await client.query('COMMIT');
+        sqlArray.push('COMMIT');
+    } catch (err) {
+        await client.query('ROLLBACK');
+        sqlArray.push('ROLLBACK');
+
+        console.error('error', err);
+        res.sendStatus(500);
+    } finally {
+        client.release();
         saveSQL(sqlArray);
     }
 });
