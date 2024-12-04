@@ -140,8 +140,26 @@ app.get('/userBills', async (req, res) => {
         await client.query('BEGIN');
         sqlArray.push('BEGIN');
 
-        // shows the bills
-        const billsQuery = 'SELECT bill_id, cost, due_date, paid FROM bill WHERE user_id = $1 ORDER BY bill_id DESC';
+        // shows the bills and the total minutes and data used for that bill period
+        const billsQuery = `
+        SELECT 
+            b.bill_id AS bill_id, 
+            b.cost AS cost, 
+            b.due_date AS due_date, 
+            b.paid AS paid,
+            COALESCE(SUM(c.duration), 0) AS total_minutes,
+            COALESCE(SUM(d.data_used_mib), 0) AS data_used_mib
+        FROM bill b
+        LEFT JOIN call_log c ON c.user_id = b.user_id 
+            AND EXTRACT(YEAR FROM c.call_date_time) = EXTRACT(YEAR FROM (b.due_date - INTERVAL '1 month'))
+            AND EXTRACT(MONTH FROM c.call_date_time) = EXTRACT(MONTH FROM (b.due_date - INTERVAL '1 month'))
+        LEFT JOIN data_log d ON d.user_id = b.user_id
+            AND EXTRACT(YEAR FROM d.month) = EXTRACT(YEAR FROM (b.due_date - INTERVAL '1 month'))
+            AND EXTRACT(MONTH FROM d.month) = EXTRACT(MONTH FROM (b.due_date - INTERVAL '1 month'))
+        WHERE b.user_id = $1 
+        GROUP BY b.bill_id
+        ORDER BY b.bill_id DESC
+        `;
         const billsResult = await client.query(billsQuery, [user_id]);
         sqlArray.push(billsQuery);
         
@@ -170,17 +188,45 @@ app.get('/userBills', async (req, res) => {
 });
 
 
-// app.get('/transaction', async (req, res) => {
-//     const user_id = req.session.user_id;
+app.get('/userTransactions', async (req, res) => {
+    const user_id = req.session.user_id;
+    const client = await pool.connect();
+    const sqlArray = [];
 
-//     try {
-//         const result = await pool.query('SELECT * FROM transaction WHERE user_id = $1', [user_id]);
-//         res.json(result.rows);
-//     } catch (err) {
-//         console.error('Error fetching transaction data:', err);
-//         res.sendStatus(500);
-//     }
-// });
+    try {
+        await client.query('BEGIN');
+        sqlArray.push('BEGIN');
+
+        // fetches transactions and joins bill table
+        const transactionsQuery = `
+            SELECT 
+                t.bill_id AS bill_id,
+                b.cost AS cost,
+                b.due_date AS due_date,
+                t.date_paid AS date_paid
+            FROM transaction t
+            JOIN bill b ON b.bill_id = t.bill_id
+            WHERE b.user_id = $1
+            ORDER BY t.bill_id DESC
+        `;
+        const result = await client.query(transactionsQuery, [user_id]);
+        sqlArray.push(transactionsQuery);
+
+        await client.query('COMMIT');
+        sqlArray.push('COMMIT');
+
+        res.status(200).json(result.rows);
+    } catch (err) {
+        await client.query('ROLLBACK');
+        sqlArray.push('ROLLBACK');
+
+        console.error('error', err);
+        res.sendStatus(500);
+    } finally {
+        client.release();
+        saveSQL(sqlArray);
+    }
+});
 
 
 // // route to fetch total sum for a specified user_id

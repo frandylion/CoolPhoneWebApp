@@ -6,26 +6,6 @@
     <title>Welcome back to CoolPhoneApp!</title>
     <script>
 
-        // async function getTransactions() {
-        //     const response = await fetch(`http://localhost:3000/transaction`);
-        //     const transactions = await response.json();
-        //     const table = document.getElementById('transactionTable');
-        //     table.innerHTML = '';
-
-        //     transactions.forEach(transaction => {
-        //         const row = `
-        //             <tr>
-        //                 <td>${transaction.user_id}</td>
-        //                 <td>${transaction.transaction_id}</td>
-        //                 <td>${transaction.transaction_date}</td>
-        //                 <td>${transaction.transaction_type}</td>
-        //                 <td>${transaction.amount}</td>
-        //             </tr>
-        //         `;
-        //         table.innerHTML += row;
-        //     });
-        // }
-
         async function getBills() {
             const response = await fetch(`http://localhost:3000/userBills`);
             const data = await response.json();
@@ -44,9 +24,32 @@
                 const row = `
                     <tr>
                         <td>${bill.bill_id}</td>
-                        <td>${bill.cost}</td>
+                        <td>$${Number(bill.cost).toFixed(2)}</td>
+                        <td>${Number(bill.total_minutes).toFixed(2)}</td>
+                        <td>${bill.data_used_mib}</td>
                         <td>${bill.due_date.split('T')[0]}</td>
                         <td>${bill.paid}</td>
+                    </tr>
+                `;
+                table.innerHTML += row;
+            }
+        }
+
+        async function getTransactions() {
+            const response = await fetch(`http://localhost:3000/userTransactions`);
+            const transaction_rows = await response.json();
+
+            // display transactions table
+            const table = document.getElementById('transactionTableBody');
+            table.innerHTML = '';
+
+            for (transaction of transaction_rows) {
+                const row = `
+                    <tr>
+                        <td>${transaction.bill_id}</td>
+                        <td>$${Number(transaction.cost).toFixed(2)}</td>
+                        <td>${transaction.date_paid.split('T')[0]}</td>
+                        <td>${transaction.due_date.split('T')[0]}</td>
                     </tr>
                 `;
                 table.innerHTML += row;
@@ -106,7 +109,7 @@
         window.onload = function() {
             welcome();
             getBills();
-            // getTransactions();
+            getTransactions();
             // getCallLog();
         };
     </script>
@@ -114,26 +117,49 @@
 <body>
 
     <h1 id="welcomeMessage">Welcome back, !</h1>
+
+    <hr>
+
     <h2 id="dueBalance">Outstanding balance: $0.00</h2>
+    <h3>Bills</h3>
     <table border="1">
         <thead>
             <tr>
                 <th>Bill ID</th>
                 <th>Amount</th>
+                <th>Call Minutes</th>
+                <th>MiB Data Used</th>
                 <th>Date Due</th>
                 <th>Paid</th>
             </tr>
         </thead>
         <tbody id="billTableBody"></tbody>
     </table>
+    <button type="button" onClick="payBalance()">Pay Balance</button>
 
-    <form id="paymentForm">
+    <br>
+    <br>
+
+    <h3>Transaction History</h3>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Bill ID</th>
+                <th>Amount</th>
+                <th>Date Paid</th>
+                <th>Date Due</th>
+            </tr>
+        </thead>
+        <tbody id="transactionTableBody"></tbody>
+    </table>
+
+    <!-- <form id="paymentForm">
         <label htmlFor="paymentAmount">Payment Amount:</label>
         <input type="number" id="paymentAmount" name="paymentAmount" required>
         <button type="button" onClick="makePayment()">Submit Payment</button>
-    </form>
+    </form> -->
 
-    <p id="paymentStatus"></p>
+    <!-- <p id="paymentStatus"></p>
     <table border="1">
         <thead>
             <tr>
@@ -145,7 +171,7 @@
             </tr>
         </thead>
         <tbody id="callTable"></tbody>
-    </table>
+    </table> -->
 
 </body>
 </html>
