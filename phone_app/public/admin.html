@@ -6,6 +6,45 @@
     <title>Admin Portal!</title>
     <script>
 
+        async function getRevenueReport() {
+            const response = await fetch(`http://localhost:3000/revenueReport`);
+            const data = await response.json();
+            const total_revenue = Number(data.totalRevenue).toFixed(2);
+            const avg_revenue = Number(data.avgRevenue).toFixed(2);
+            const total_outstanding = Number(data.outstandingBills).toFixed(2);
+
+            // display total
+            const totalElement = document.getElementById('totalRevenueValue');
+            totalElement.textContent = `$${total_revenue}`;
+
+            // display average
+            const avgElement = document.getElementById('avgRevenueValue');
+            avgElement.textContent = `$${avg_revenue}`;
+
+            // display outstanding
+            const outstandingElement = document.getElementById('outstandingValue');
+            outstandingElement.textContent = `$${total_outstanding}`;
+        }
+
+        async function getCallReport() {
+            
+        }
+
+        async function userSearch() {
+            
+        }
+
+        async function getMonth() {
+            
+        }
+
+        window.onload = function() {
+            getRevenueReport();
+            getCallReport();
+            userSearch();
+            getMonth();
+        };
+
     </script>
 </head>
 <body>
@@ -27,7 +66,7 @@
         </tr>
         <tr>
             <th>Total Outstanding Bills:</th>
-            <td id="totalBillsValue"></td>
+            <td id="outstandingValue"></td>
         </tr>
     </table>
 

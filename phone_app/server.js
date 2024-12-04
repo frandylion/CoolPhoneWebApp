@@ -439,6 +439,58 @@ app.post('/adminView', async (req, res) => {
 //  #################
 //  ## Back Office ##
 //  #################
+app.get('/revenueReport', async (req, res) => {
+    const client = await pool.connect();
+    const sqlArray = [];
+
+    try {
+        await client.query('BEGIN');
+        sqlArray.push('BEGIN');
+
+        // total revenue
+        const revenueQuery = 'SELECT SUM(cost) AS total_revenue FROM bill WHERE paid = true';
+        const totalRevenue = await client.query(revenueQuery);
+        sqlArray.push(revenueQuery);
+
+        // average revenue per user
+        const averageQuery = `
+            WITH
+                revenue_per_user AS (
+                    SELECT user_id, SUM(cost) AS revenue
+                    FROM bill
+                    WHERE paid = true
+                    GROUP BY user_id
+                )
+            SELECT AVG(revenue) AS avg_revenue
+            FROM revenue_per_user
+        `;
+        const avgRevenue = await client.query(averageQuery);
+        sqlArray.push(averageQuery);
+
+        // unpaid bills
+        const billsQuery = 'SELECT SUM(cost) AS outstanding_bills FROM bill WHERE paid = false';
+        const billsResult = await client.query(billsQuery);
+        sqlArray.push(billsQuery);
+
+        await client.query('COMMIT');
+        sqlArray.push('COMMIT');
+
+        res.status(200).json({
+            totalRevenue: totalRevenue.rows[0].total_revenue || 0,
+            avgRevenue: avgRevenue.rows[0].avg_revenue || 0,
+            outstandingBills: billsResult.rows[0].outstanding_bills || 0
+        });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        sqlArray.push('ROLLBACK');
+
+        console.error('Error:', err);
+        res.sendStatus(500);
+    } finally {
+        client.release();
+        saveSQL(sqlArray);
+    }
+});
 
 
 //  ################
