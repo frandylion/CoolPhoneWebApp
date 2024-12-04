@@ -52,7 +52,29 @@
         }
 
         async function userSearch() {
-            
+            // get search term with whitespace removed
+            const term = document.getElementById('searchInput').value.replace(/\s/g, "");
+
+            // get users
+            const response = await fetch(`http://localhost:3000/userSearch/${term}`);
+            const user_rows = await response.json();
+
+            // display user table
+            const table = document.getElementById('userTableBody');
+            table.innerHTML = '';
+
+            for (user of user_rows) {
+                const row = `
+                    <tr>
+                        <td>${user.user_id}</td>
+                        <td>${user.username}</td>
+                        <td>${user.password}</td>
+                        <td>${user.plan}</td>
+                        <td>${Number(user.total_minutes).toFixed(2)} minutes</td>
+                    </tr>
+                `;
+                table.innerHTML += row;
+            }
         }
 
         async function getMonth() {
@@ -116,7 +138,7 @@
     <br>
 
     <h2>User Search</h2>
-    <p>Search for a user by username:</p>
+    <p>Search for a user by username (ENTER to search):</p>
     <input type='text' id='searchInput' onchange='userSearch()'>
     <table border="1">
         <thead>

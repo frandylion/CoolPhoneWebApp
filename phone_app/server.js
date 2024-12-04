@@ -563,6 +563,108 @@ app.get('/callsReport', async (req, res) => {
 });
 
 
+// default user search
+app.get('/userSearch', async (req, res) => {
+    const client = await pool.connect();
+    const sqlArray = [];
+
+    try {
+        await client.query('BEGIN');
+        sqlArray.push('BEGIN');
+
+        // get all users
+        const usersQuery = `
+            WITH
+                user_minutes AS (
+                    SELECT u.user_id, COALESCE(SUM(c.duration), 0) AS minutes 
+                    FROM users u
+                    LEFT JOIN call_log c ON c.user_id = u.user_id
+                    GROUP BY u.user_id
+                )
+            SELECT
+                u.user_id AS user_id,
+                u.username AS username,
+                u.password AS password,
+                CONCAT(up.plan_type, ' ', up.payment_type) AS plan,
+                um.minutes AS total_minutes
+            FROM users u
+            JOIN user_plan up ON up.user_id = u.user_id
+            LEFT JOIN user_minutes um ON um.user_id = u.user_id
+            ORDER BY u.user_id
+            LIMIT 100
+        `;
+        const result = await client.query(usersQuery);
+        sqlArray.push(usersQuery);
+
+        await client.query('COMMIT');
+        sqlArray.push('COMMIT');
+
+        res.status(200).json(result.rows);
+    } catch (err) {
+        await client.query('ROLLBACK');
+        sqlArray.push('ROLLBACK');
+
+        console.error('error', err);
+        res.sendStatus(500);
+    } finally {
+        client.release();
+        saveSQL(sqlArray);
+    }
+});
+
+
+// User search with term
+app.get('/userSearch/:term', async (req, res) => {
+    const term = "%" + req.params.term + "%";
+    const client = await pool.connect();
+    const sqlArray = [];
+
+    try {
+        await client.query('BEGIN');
+        sqlArray.push('BEGIN');
+
+        // get all users
+        const usersQuery = `
+            WITH
+                user_minutes AS (
+                    SELECT u.user_id, COALESCE(SUM(c.duration), 0) AS minutes 
+                    FROM users u
+                    LEFT JOIN call_log c ON c.user_id = u.user_id
+                    GROUP BY u.user_id
+                )
+            SELECT
+                u.user_id AS user_id,
+                u.username AS username,
+                u.password AS password,
+                CONCAT(up.plan_type, ' ', up.payment_type) AS plan,
+                um.minutes AS total_minutes
+            FROM users u
+            JOIN user_plan up ON up.user_id = u.user_id
+            LEFT JOIN user_minutes um ON um.user_id = u.user_id
+            WHERE u.username LIKE $1
+            ORDER BY u.user_id
+            LIMIT 100
+        `;
+        const result = await client.query(usersQuery, [term]); // line 648
+        sqlArray.push(usersQuery.replace('$1', term));
+
+        await client.query('COMMIT');
+        sqlArray.push('COMMIT');
+
+        res.status(200).json(result.rows);
+    } catch (err) {
+        await client.query('ROLLBACK');
+        sqlArray.push('ROLLBACK');
+
+        console.error('error', err);
+        res.sendStatus(500);
+    } finally {
+        client.release();
+        saveSQL(sqlArray);
+    }
+});
+
+
 //  ################
 //  ## Simulation ##
 //  ################
