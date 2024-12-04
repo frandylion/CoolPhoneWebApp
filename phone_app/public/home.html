@@ -56,41 +56,33 @@
             }
         }
 
-        // async function makePayment() {
-        //     const paymentAmount = document.getElementById('paymentAmount').value;
-        //     const user_id = await getUser().user_id;
+        async function getCalls() {
+            const response = await fetch(`http://localhost:3000/userCalls`);
+            const call_rows = await response.json();
 
-        //     const response = await fetch('http://localhost:3000/make_payment', {
-        //         method: 'POST',
-        //         headers: {'Content-Type': 'application/json'},
-        //         body: JSON.stringify({payment_amount: parseFloat(paymentAmount)})
-        //     });
+            // display transactions table
+            const table = document.getElementById('callTableBody');
+            table.innerHTML = '';
 
-        //     const result = await response.json();
-        //     document.getElementById('paymentStatus').textContent = result.message;
-        //     getTransactions();
-        //     getUserTotalAmount();
-        // }
+            for (call of call_rows) {
+                const row = `
+                    <tr>
+                        <td>${call.call_id}</td>
+                        <td>${call.date.split('T')[0]} ${call.date.split('T')[1].split('.')[0]}</td>
+                        <td>${Number(call.duration).toFixed(2)}</td>
+                        <td>${call.call_type}</td>
+                        <td>$${Number(call.cost).toFixed(2)}</td>
+                    </tr>
+                `;
+                table.innerHTML += row;
+            }
+        }
 
-        // async function getCallLog() {
-        //     const response = await fetch(`http://localhost:3000/call_log`);
-        //     const calls = await response.json();
-        //     const table = document.getElementById('callTable');
-        //     table.innerHTML = '';
-
-        //     calls.forEach(call_log => {
-        //         const row = `
-        //             <tr>
-        //                 <td>${call_log.user_id}</td>
-        //                 <td>${call_log.call_id}</td>
-        //                 <td>${call_log.duration}</td>
-        //                 <td>${call_log.call_date_time}</td>
-        //                 <td>${call_log.call_type}</td>
-        //              </tr>
-        //         `;
-        //         table.innerHTML += row;
-        //     });
-        // }
+        async function payBalance() {
+            const response = await fetch(`http://localhost:3000/payBills`);
+            getTransactions();
+            getBills();
+        }
 
         async function welcome() {
             const user_json = await getUser();
@@ -110,7 +102,7 @@
             welcome();
             getBills();
             getTransactions();
-            // getCallLog();
+            getCalls();
         };
     </script>
 </head>
@@ -153,25 +145,22 @@
         <tbody id="transactionTableBody"></tbody>
     </table>
 
-    <!-- <form id="paymentForm">
-        <label htmlFor="paymentAmount">Payment Amount:</label>
-        <input type="number" id="paymentAmount" name="paymentAmount" required>
-        <button type="button" onClick="makePayment()">Submit Payment</button>
-    </form> -->
+    <br>
+    <br>
 
-    <!-- <p id="paymentStatus"></p>
+    <h3>Call Log</h3>
     <table border="1">
         <thead>
             <tr>
-                <th>User ID</th>
                 <th>Call ID</th>
-                <th>Duration</th>
-                <th>Date</th>
-                <th>call type</th>
+                <th>Timestamp</th>
+                <th>Minutes</th>
+                <th>Type</th>
+                <th>Cost</th>
             </tr>
         </thead>
-        <tbody id="callTable"></tbody>
-    </table> -->
+        <tbody id="callTableBody"></tbody>
+    </table>
 
 </body>
 </html>
