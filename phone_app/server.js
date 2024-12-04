@@ -12,6 +12,7 @@ const fsp = require('fs').promises;
 const public_dir = 'public';
 const login_page = 'login.html';
 const home_page = 'home.html';
+const admin_page = 'admin.html';
 const sql_log_path = 'log.sql';
 const table_init_script = 'sim_init.sql';
 
@@ -42,10 +43,6 @@ const pool = new Pool({
     port: 5432,
 });
 
-app.get('/', async (req, res) => {
-    res.sendFile(path.join(__dirname, public_dir, login_page));
-});
-
 
 async function saveSQL(lines) {
     try {
@@ -65,9 +62,38 @@ async function saveSQL(lines) {
 }
 
 
+async function clearLog() {
+    try {
+        // check if log file exists
+        await fsp.access(sql_log_path, fsp.constants.F_OK);
+        
+        // if file exists, attempt to remove it
+        await fsp.rm(sql_log_path);
+        
+        console.log('Successfully cleared SQL log file.');
+    } catch (error) {
+        // if file does not exist, warn and continue
+        if (error.code == 'ENOENT') {
+            console.warn(`WARNING: Skipping clearing log file. File not found.`);
+        } else {
+            // if file exists but removal fails, close the server
+            console.error(`ERROR: Failed to clear log file with message --> \n${error}\n\nExiting.`);
+            server.close( error => {
+                process.exit(error ? 1 : 0);
+            });
+        }
+    }
+}
+
+
 //  ###########
-//  ## Login ##
+//  ## Pages ##
 //  ###########
+app.get('/', async (req, res) => {
+    res.sendFile(path.join(__dirname, public_dir, login_page));
+});
+
+
 app.get('/home', async (req, res) => {
     if (req.session.loggedin) {
         res.sendFile(path.join(__dirname, public_dir, home_page));
@@ -77,7 +103,19 @@ app.get('/home', async (req, res) => {
     }
 });
 
+app.get('/admin', async (req, res) => {
+    if (req.session.loggedin && req.session.admin) {
+        res.sendFile(path.join(__dirname, public_dir, admin_page));
+    } else {
+        res.send('You must be an admin to access this page.');
+        res.end();
+    }
+});
 
+
+//  ###########
+//  ## Login ##
+//  ###########
 app.post('/auth', async (req, res) => {
     const client = await pool.connect();
     const sqlArray = [];
@@ -334,48 +372,6 @@ app.get('/userCalls', async (req, res) => {
 });
 
 
-// // the function to make a payment
-// app.post('/make_payment', async (req, res) => {
-//     const user_id = req.session.user_id;
-//     const payment_amount = req.body.payment_amount;
-
-//     try {
-//         await pool.query('BEGIN');
-
-//         const balanceResult = await pool.query(
-//             'SELECT balance FROM bank WHERE user_id = $1 FOR UPDATE', [user_id]
-//         );
-//          if (balanceResult.rows.length === 0) {
-//             await pool.query('ROLLBACK');
-//             return res.status(404).json({ message: 'user account not found' });
-//         }
-
-//         const userBalance = balanceResult.rows[0].balance;
-//         if (userBalance < payment_amount) {
-//             return res.status(400).json({ message: 'card declined' });
-//         }
-
-//         const updateBalance = await pool.query(
-//             'UPDATE bank SET balance = balance - $1 WHERE user_id = $2',
-//             [payment_amount, user_id]
-//         );
-
-//          const insertTransaction = await pool.query(
-//             'INSERT INTO transaction (user_id, transaction_date, transaction_type, amount) VALUES ($1, NOW(), $2, $3)',
-//             [user_id, 'payment', -payment_amount]
-//         );
-
-//         await pool.query('COMMIT');
-//         res.status(200).json({ message: 'payment successful' });
-
-//     } catch (error) {
-//         await pool.query('ROLLBACK');
-//         console.error('error ', error);
-//         res.sendStatus(500);
-//     }
-// });
-
-
 app.get('/user', async (req, res) => {
     const user_id = req.session.user_id;
     const client = await pool.connect();
@@ -394,6 +390,43 @@ app.get('/user', async (req, res) => {
 
         res.status(200).json(userResult.rows[0]);
     } catch (err) {
+        console.error('error ', err);
+        res.sendStatus(500);
+    } finally {
+        client.release();
+        saveSQL(sqlArray);
+    }
+});
+
+
+// this code checks if the user is an admin and redirects to the admin page if they are
+app.post('/adminView', async (req, res) => {
+    const user_id = req.session.user_id;
+    const client = await pool.connect();
+    const sqlArray = [];
+
+    try {
+        await client.query('BEGIN');
+        sqlArray.push('BEGIN');
+
+        const adminQuery = 'SELECT * FROM users WHERE user_id = $1 AND admin = true';
+        const adminResult = await client.query(adminQuery, [user_id]);
+        sqlArray.push(adminQuery.replace('$1', user_id.toString()));
+
+        if (adminResult.rows.length > 0) {
+            // redirect to admin page
+            req.session.admin = true;
+            res.redirect('/admin');
+        } else {
+            res.redirect('/home');
+        }
+
+        await client.query('COMMIT');
+        sqlArray.push('COMMIT');
+    } catch (err) {
+        await client.query('ROLLBACK');
+        sqlArray.push('ROLLBACK');
+
         console.error('error ', err);
         res.sendStatus(500);
     } finally {
@@ -469,26 +502,3 @@ let server = app.listen(3000, async () => {
 
     console.log('Server is running on port 3000');
 });
-
-async function clearLog() {
-    try {
-        // check if log file exists
-        await fsp.access(sql_log_path, fsp.constants.F_OK);
-        
-        // if file exists, attempt to remove it
-        await fsp.rm(sql_log_path);
-        
-        console.log('Successfully cleared SQL log file.');
-    } catch (error) {
-        // if file does not exist, warn and continue
-        if (error.code == 'ENOENT') {
-            console.warn(`WARNING: Skipping clearing log file. File not found.`);
-        } else {
-            // if file exists but removal fails, close the server
-            console.error(`ERROR: Failed to clear log file with message --> \n${error}\n\nExiting.`);
-            server.close( error => {
-                process.exit(error ? 1 : 0);
-            });
-        }
-    }
-}
