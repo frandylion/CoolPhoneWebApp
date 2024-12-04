@@ -6,18 +6,18 @@ const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const path = require('path');
 const cors = require('cors');
-const fs = require('fs');
+const fsp = require('fs').promises;
 
 // Constants
 const public_dir = 'public';
 const login_page = 'login.html';
-const home_page = 'home.hmtl';
+const home_page = 'home.html';
 const sql_log_path = 'log.sql';
-const table_init_script = 'init_sim.sql';
+const table_init_script = 'sim_init.sql';
 
-//  ####################
-//  ## Initialization ##
-//  ####################
+//  ###########################
+//  ## Server Initialization ##
+//  ###########################
 const app = express();
 app.use(cors()); // Enable CORS for cross-origin requests
 
@@ -46,22 +46,22 @@ app.get('/', async (req, res) => {
     res.sendFile(path.join(__dirname, public_dir, login_page));
 });
 
-// TODO function to save sql to file
-async function saveSQL(lines) {
-    // combine the array of inputs into a multiline string
-    let output = "";
-    for (const line of lines) {
-        output += line + ';\n\n';
-    }
-    // add spacing between blocks of output for readability
-    output += '\n\n';
 
-    // append to the log file
-    fs.appendFile(sql_log_path, output, 'utf8', error => {
-        if (error) {
-            console.error(`ERROR: Failed to append to sql log file with message --> \n${error}`);
+async function saveSQL(lines) {
+    try {
+        // combine the array of inputs into a multiline string
+        let output = "";
+        for (const line of lines) {
+            output += line + ';\n\n';
         }
-    });
+        // add spacing between blocks of output for readability
+        output += '\n\n';
+
+        // append to the log file
+        fsp.appendFile(sql_log_path, output, 'utf8');
+    } catch (error) {
+        console.error(`ERROR: Failed to append to sql log file with message --> \n${error}`);
+    }
 }
 
 
@@ -76,6 +76,7 @@ app.get('/home', async (req, res) => {
         res.end();
     }
 });
+
 
 app.post('/auth', async (req, res) => {
     try {
@@ -119,10 +120,12 @@ app.post('/auth', async (req, res) => {
     }
 });
 
+
 // checks the entered password against the stored password
 async function checkPassword(input, password) {
   return (input === password);
 }
+
 
 //  ##################
 //  ## Front Office ##
@@ -139,6 +142,7 @@ app.get('/transaction', async (req, res) => {
     }
 });
 
+
 // route to fetch total sum for a specified user_id
 app.get('/transaction/sum/', async (req, res) => {
     const user_id = req.session.user_id;
@@ -154,6 +158,7 @@ app.get('/transaction/sum/', async (req, res) => {
         res.status(500).json({ error: 'Error calculating sum' });
     }
 });
+
 
 //the function to make a payment
 app.post('/make_payment', async (req, res) => {
@@ -196,6 +201,7 @@ app.post('/make_payment', async (req, res) => {
     }
 });
 
+
 app.get('/call_log', async (req, res) => {
     const user_id = req.session.user_id;
 
@@ -207,6 +213,7 @@ app.get('/call_log', async (req, res) => {
         res.sendStatus(500);
     }
 });
+
 
 app.get('/user', async (req, res) => {
     const user_id = req.session.user_id;
@@ -230,11 +237,50 @@ app.get('/user', async (req, res) => {
 //  ## Simulation ##
 //  ################
 app.get('/initializeTables', async (req, res) => {
+    let script_blocks;
     try {
         // read initialization script as array of queries delimited by ';'
-        const script_blocks = fs.readFileSync(table_init_script, 'utf8').split(';');
+        const script_contents = await fsp.readFile(table_init_script, 'utf8');
 
-        // TODO
+        // if file contents are undefined then exit
+        if (!script_contents) {
+            throw new Error('Error: Contents of table intialization script are undefined.');
+        }
+
+        script_blocks = await script_contents.split(';');
+    } catch (error) {
+        console.error('ERROR: failed to prepare table initialization script with message --> \n', error);
+        res.status(500).json('Failed to populate tables.');
+        return;
+    }
+
+    const client = await pool.connect();
+    const sqlArray = [];
+
+    // run the queries in the script
+    try {
+        for (const query of script_blocks) {
+            await client.query(query.trim());
+            sqlArray.push(query.trim());
+        }
+
+        // send successful status once all queries are run
+        res.status(200).json('Successfully populated tables.');
+        console.log('Successfully populated tables.');
+    } catch (error) {
+        console.error('ERROR: failed while initializing tables with message --> \n', error);
+
+        if (client) {
+            await client.query('ROLLBACK');
+            sqlArray.push('ROLLBACK');
+        }
+
+        res.status(500).json('Failed to populate tables.');
+    } finally {
+        if (client) {
+            client.release();
+        }
+        saveSQL(sqlArray);
     }
 });
 
@@ -242,7 +288,7 @@ app.get('/initializeTables', async (req, res) => {
 //  ######################
 //  ## Start the server ##
 //  ######################
-let server = app.listen(3000, () => {
+let server = app.listen(3000, async () => {
     // clear the sql log if it exists
     await clearLog();
 
@@ -250,24 +296,24 @@ let server = app.listen(3000, () => {
 });
 
 async function clearLog() {
-    // check if the log file exists
-    fs.access(sql_log_path, fs.constants.F_OK, error => {
-        if (error) {
-            console.error(`WARNING: Skipping clearing log file with message --> \n${error}`);
+    try {
+        // check if log file exists
+        await fsp.access(sql_log_path, fsp.constants.F_OK);
+        
+        // if file exists, attempt to remove it
+        await fsp.rm(sql_log_path);
+        
+        console.log('Successfully cleared SQL log file.');
+    } catch (error) {
+        // if file does not exist, warn and continue
+        if (error.code == 'ENOENT') {
+            console.warn(`WARNING: Skipping clearing log file. File not found.`);
         } else {
-            // delete the file
-            fs.rm(sql_log_path, error => {
-                if (error) {
-                    // exit if the program fails to clear the file
-                    console.error(`ERROR: Failed to clear log file with message --> \n${error}\n\nExiting.`);
-                    server.close( error => {
-                        console.log('Server closed.');
-                        process.exit(error ? 1 : 0);
-                    });
-                } else {
-                    console.log('Succesfully cleared sql log file.');
-                }
+            // if file exists but removal fails, close the server
+            console.error(`ERROR: Failed to clear log file with message --> \n${error}\n\nExiting.`);
+            server.close( error => {
+                process.exit(error ? 1 : 0);
             });
         }
-    });
-};
+    }
+}

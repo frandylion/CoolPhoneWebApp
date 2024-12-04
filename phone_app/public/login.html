@@ -8,6 +8,8 @@
         async function initSimulation() {
             const response = await fetch(`http://localhost:3000/initializeTables`);
             const result = await response.json();
+            const message = document.getElementById('initSimMessage');
+            message.textContent = result;
         }
     </script>
 </head>
@@ -29,8 +31,9 @@
 
     <div>
         <h2>Initialize Simulation</h2>
-        <button type="button" onClick="initSimulation()">Simulate</button>
         <p>This button populates the initial tables of the database.</p>
+        <button type="button" onClick="initSimulation()">Simulate</button>
+        <p id="initSimMessage"></p>
     </div>
 </body>
 </html>
