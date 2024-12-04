@@ -27,7 +27,28 @@
         }
 
         async function getCallReport() {
-            
+            const response = await fetch(`http://localhost:3000/callsReport`);
+            const data = await response.json();
+            const total_minutes = Number(data.totalMinutes).toFixed(2);
+            const percent_local = Number(data.percentLocal).toFixed(2);
+            const percent_national = Number(data.percentNational).toFixed(2);
+            const avg_duration = Number(data.avgDuration).toFixed(2);
+
+            // display total
+            const totalElement = document.getElementById('totalMinutesValue');
+            totalElement.textContent = `${total_minutes} minutes`;
+
+            // display local percent
+            const localElement = document.getElementById('localShareValue');
+            localElement.textContent = `${percent_local}%`;
+
+            // display national percent
+            const nationalElement = document.getElementById('nationalShareValue');
+            nationalElement.textContent = `${percent_national}%`;
+
+            // display average duration
+            const avgElement = document.getElementById('avgDurationValue');
+            avgElement.textContent = `${avg_duration} minutes`;
         }
 
         async function userSearch() {

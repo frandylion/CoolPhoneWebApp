@@ -493,6 +493,76 @@ app.get('/revenueReport', async (req, res) => {
 });
 
 
+app.get('/callsReport', async (req, res) => {
+    const client = await pool.connect();
+    const sqlArray = [];
+
+    try {
+        await client.query('BEGIN');
+        sqlArray.push('BEGIN');
+
+        // total minutes
+        const minutesQuery = 'SELECT SUM(duration) AS minutes FROM call_log';
+        const total_minutes = await client.query(minutesQuery);
+        sqlArray.push(minutesQuery);
+
+        // percent minutes from local calls
+        const localQuery = `
+            WITH
+                total_minutes AS (
+                    SELECT SUM(duration) AS minutes FROM call_log
+                ),
+                local_minutes AS (
+                    SELECT SUM(duration) AS minutes FROM call_log WHERE call_type = 'Local'
+                )
+            SELECT (l.minutes / t.minutes * 100) AS percent
+            FROM total_minutes t, local_minutes l
+        `;
+        const percent_local = await client.query(localQuery);
+        sqlArray.push(localQuery);
+
+        // percent minutes from national calls
+        const nationalQuery = `
+            WITH
+                total_minutes AS (
+                    SELECT SUM(duration) AS minutes FROM call_log
+                ),
+                national_minutes AS (
+                    SELECT SUM(duration) AS minutes FROM call_log WHERE call_type = 'National'
+                )
+            SELECT (n.minutes / t.minutes * 100) AS percent
+            FROM total_minutes t, national_minutes n
+        `;
+        const percent_national = await client.query(nationalQuery);
+        sqlArray.push(nationalQuery);
+
+        // average duration
+        const averageQuery = 'SELECT AVG(duration) AS avg_duration FROM call_log';
+        const average_duration = await client.query(averageQuery);
+        sqlArray.push(averageQuery);
+
+        await client.query('COMMIT');
+        sqlArray.push('COMMIT');
+
+        res.status(200).json({
+            totalMinutes: total_minutes.rows[0].minutes || 0,
+            percentLocal: percent_local.rows[0].percent || 0,
+            percentNational: percent_national.rows[0].percent || 0,
+            avgDuration: average_duration.rows[0].avg_duration || 0
+        });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        sqlArray.push('ROLLBACK');
+
+        console.error('Error:', err);
+        res.sendStatus(500);
+    } finally {
+        client.release();
+        saveSQL(sqlArray);
+    }
+});
+
+
 //  ################
 //  ## Simulation ##
 //  ################
