@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CoolPhoneApp - Login</title>
     <script>
+
         async function initSimulation() {
             const response = await fetch(`http://localhost:3000/initializeTables`);
             const result = await response.json();
             const message = document.getElementById('initSimMessage');
             message.textContent = result;
         }
+        
     </script>
 </head>
 <body>
@@ -29,11 +31,10 @@
     <br>
     <hr>
 
-    <div>
-        <h2>Initialize Simulation</h2>
-        <p>This button populates the initial tables of the database.</p>
-        <button type="button" onClick="initSimulation()">Simulate</button>
-        <p id="initSimMessage"></p>
-    </div>
+    <h2>Initialize Simulation</h2>
+    <p>This button populates the initial tables of the database.</p>
+    <button type="button" onClick="initSimulation()">Simulate</button>
+    <p id="initSimMessage"></p>
+
 </body>
 </html>

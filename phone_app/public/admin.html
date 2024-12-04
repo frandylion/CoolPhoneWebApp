@@ -6,11 +6,159 @@
     <title>Admin Portal!</title>
     <script>
 
+        async function getRevenueReport() {
+            const response = await fetch(`http://localhost:3000/revenueReport`);
+            const data = await response.json();
+            const total_revenue = Number(data.totalRevenue).toFixed(2);
+            const avg_revenue = Number(data.avgRevenue).toFixed(2);
+            const total_outstanding = Number(data.outstandingBills).toFixed(2);
+
+            // display total
+            const totalElement = document.getElementById('totalRevenueValue');
+            totalElement.textContent = `$${total_revenue}`;
+
+            // display average
+            const avgElement = document.getElementById('avgRevenueValue');
+            avgElement.textContent = `$${avg_revenue}`;
+
+            // display outstanding
+            const outstandingElement = document.getElementById('outstandingValue');
+            outstandingElement.textContent = `$${total_outstanding}`;
+        }
+
+        async function getCallReport() {
+            const response = await fetch(`http://localhost:3000/callsReport`);
+            const data = await response.json();
+            const total_minutes = Number(data.totalMinutes).toFixed(2);
+            const percent_local = Number(data.percentLocal).toFixed(2);
+            const percent_national = Number(data.percentNational).toFixed(2);
+            const avg_duration = Number(data.avgDuration).toFixed(2);
+
+            // display total
+            const totalElement = document.getElementById('totalMinutesValue');
+            totalElement.textContent = `${total_minutes} minutes`;
+
+            // display local percent
+            const localElement = document.getElementById('localShareValue');
+            localElement.textContent = `${percent_local}%`;
+
+            // display national percent
+            const nationalElement = document.getElementById('nationalShareValue');
+            nationalElement.textContent = `${percent_national}%`;
+
+            // display average duration
+            const avgElement = document.getElementById('avgDurationValue');
+            avgElement.textContent = `${avg_duration} minutes`;
+        }
+
+        async function userSearch() {
+            
+        }
+
+        async function getMonth() {
+            
+        }
+
+        window.onload = function() {
+            getRevenueReport();
+            getCallReport();
+            userSearch();
+            getMonth();
+        };
+
     </script>
 </head>
 <body>
 
-    <h1 id="welcomeMessage">Welcome back, !</h1>
+    <h1>Welcome back, Admin!</h1>
+
+    <hr>
+
+    <h2>Reports</h2>
+    <h3>Revenue</h3>
+    <table border="1">
+        <tr>
+            <th>Total Revenue:</th>
+            <td id="totalRevenueValue"></td>
+        </tr>
+        <tr>
+            <th>Avg. Revenue Per User:</th>
+            <td id="avgRevenueValue"></td>
+        </tr>
+        <tr>
+            <th>Total Outstanding Bills:</th>
+            <td id="outstandingValue"></td>
+        </tr>
+    </table>
+
+    <br>
+
+    <h3>Calls</h3>
+    <table border="1">
+        <tr>
+            <th>Total Minutes:</th>
+            <td id="totalMinutesValue"></td>
+        </tr>
+        <tr>
+            <th>Local Call Share:</th>
+            <td id="localShareValue"></td>
+        </tr>
+        <tr>
+            <th>National Call Share:</th>
+            <td id="nationalShareValue"></td>
+        </tr>
+        <tr>
+            <th>Avg. Call Duration:</th>
+            <td id="avgDurationValue"></td>
+        </tr>
+    </table>
+
+    <br>
+
+    <h2>User Search</h2>
+    <p>Search for a user by username:</p>
+    <input type='text' id='searchInput' onchange='userSearch()'>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>User ID</th>
+                <th>Username</th>
+                <th>Password</th>
+                <th>Plan</th>
+                <th>Total Minutes</th>
+            </tr>
+        </thead>
+        <tbody id="userTableBody"></tbody>
+    </table>
+
+    <br>
+    <hr>
+
+    <h2>Simulation</h2>
+
+    <p id="currentMonth">Current Simulation Month: </p>
+    <button type="button" onClick="nextMonth()">Next Month</button>
+    <p id="monthMessage"></p>
+
+    <br>
+
+    <button type="button" onClick="addUser()">Add 1 User</button>
+    <p id="oneUserMessage"></p>
+
+    <br>
+
+    <button type="button" onClick="addTenUsers()">Add 10 Users</button>
+    <p id="tenUsersMessage"></p>
+
+    <br>
+
+    <button type="button" onClick="addHundredCalls()">Add 100 Calls</button>
+    <p id="hundredCallsMessage"></p>
+
+    <br>
+
+    <button type="button" onClick="payAllBills()">Pay All Bills</button>
+    <p id="allBillsMessage"></p>
 
 </body>
 </html>
