@@ -26,6 +26,10 @@ Setup the server:
 7. All SQL is saved in the phone_app/log.sql file (which is cleared at server start).
 
 
+**Video Link:**
+http://tiny.cc/dbs05
+
+
 **Important files:**
 - README.md
 - er_model.png
