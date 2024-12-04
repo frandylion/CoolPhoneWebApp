@@ -1,0 +1,93 @@
+CREATE TABLE users (
+user_id SERIAL,
+username VARCHAR (32),
+password VARCHAR (32),
+last_name VARCHAR (32),
+first_name VARCHAR (32),
+phone_number BIGINT,
+phone_model VARCHAR (32),
+admin BOOL,
+PRIMARY KEY (user_id));
+
+
+-- user_plan
+CREATE TABLE user_plan (
+user_id INT,
+plan_type VARCHAR (32),
+payment_type VARCHAR (32),
+PRIMARY KEY (user_id));
+
+
+-- plan
+CREATE TABLE plan (
+plan_type VARCHAR (32),
+payment_type VARCHAR (32),
+call_limit_min INT,
+data_limit_mib INT,
+data_cost DECIMAL (10, 2),
+PRIMARY KEY (plan_type, payment_type));
+
+
+-- phone
+CREATE TABLE phone (
+	model VARCHAR (32),
+	brand VARCHAR (32),
+	PRIMARY KEY (model));
+
+
+
+-- call_log
+CREATE TABLE call_log (
+call_id SERIAL,
+user_id INT,
+duration DECIMAL (10, 2),
+call_date_time TIMESTAMP,
+call_type VARCHAR (32),
+num_called BIGINT,
+PRIMARY KEY (call_id));
+
+
+
+-- data_log
+CREATE TABLE data_log (
+user_id INT,
+month DATE,
+monthly_data_mib INT,
+data_used_mib INT,
+PRIMARY KEY (user_id, month));
+
+
+
+-- call_type
+CREATE TABLE call_type (
+type_name VARCHAR (32),
+cost_per_minute DECIMAL (10, 2),
+PRIMARY KEY (type_name));
+
+
+
+-- bank
+CREATE TABLE bank (
+user_id INT,
+bank_account_num INT,
+card_num BIGINT,
+bank_name VARCHAR (32),
+PRIMARY KEY (user_id));
+
+
+-- transaction
+CREATE TABLE transaction (
+	bill_id INT,
+	date_paid DATE,
+	PRIMARY KEY (bill_id));
+
+
+
+-- bill
+CREATE TABLE bill (
+	bill_id SERIAL,
+	user_id INT,
+	cost DECIMAL (10, 2),
+	due_date DATE,
+	paid BOOL,
+	PRIMARY KEY (bill_id));
