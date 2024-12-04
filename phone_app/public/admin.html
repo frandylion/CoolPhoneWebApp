@@ -79,6 +79,22 @@
 
         async function addUser() {
             const response = await fetch(`http://localhost:3000/addUser`);
+            userSearch();
+        }
+
+        async function addTenUsers() {
+            for (let i = 0; i < 10; i++) {
+                const response = await fetch(`http://localhost:3000/addUser`);
+            }
+            userSearch();
+        }
+
+        async function addHundredCalls() {
+
+        }
+
+        async function payAllBills() {
+            
         }
 
         async function getMonth() {

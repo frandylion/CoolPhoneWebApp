@@ -2,16 +2,9 @@
 
 Setup the database:  
   1. Starting in the base directory (the one that contains this file), open the postgreSQL cli.
-  2. Initialize the `phone` database using the provided `database.sql` script:
+  2. Initialize the `phone` database and `dbs05` rolee using the provided `database.sql` script:
       `\i database.sql`
-  3. Connect to the `phone` database as user `dbs05`:
-      `\c phone dbs05`
-  4. Initialiaze the database tables using the `phone.sql` script:
-      `\i phone.sql`
-  5. Optionally, use the `\dt` command to ensure the tables were created.
-  6. You can now exit the postgreSQL cli.
-
-### FIXME - possibly delete 3,4,5 once there is a gui button to run phone.sql. possibly just make 
+  3. You can now exit the postgreSQL cli.
 
 Setup the server:
   1. Enter the `phone_app/` directory.
@@ -23,17 +16,30 @@ Setup the server:
 
 **Instructions for use:**
 1. Open the webapp in a browser with the address `localhost:3000`.
+2. Press the `Simulate` button to populate the initial tables.
 2. Login with the username and password of one of the users in the database:
-      e.g. username: `bisniz` and password: `shodleo098`
-3. You can now view the tables and balance. You can also submit payments to the transaction table.
+      e.g. username: `mimimi` and password: `beepbepp028`
+3. You can now view the tables and balance. You can also pay the due balance.
+4. If your user is an admin (`mimimi` is an admin) you can view the Admin Portal by clicking the `Access Admin Portal` button at the bottom of the page.
+5. In the Admin Portal you can view overall reports and search users by username.
+6. You can also access additional simulation options.
+7. All SQL is saved in the phone_app/log.sql file (which is cleared at server start).
 
 
 **Important files:**
 - README.md
 - er_model.png
+- logical_er.png
+- physicalDiagram.txt
+- preliminary_er_model.png
+- draft_er_model.png
+- team 5 database report.pdf
 - phone_app/server.js
+- phone_app/sim_init.sql
+- phone_app/log.sql
 - phone_app/public/login.html
 - phone_app/public/home.html
+- phone_app/public/admin.html
 
 
 ***REMOVED***
