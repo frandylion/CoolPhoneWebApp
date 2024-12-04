@@ -10,7 +10,95 @@
 </head>
 <body>
 
-    <h1 id="welcomeMessage">Welcome back, !</h1>
+    <h1>Welcome back, Admin!</h1>
+
+    <hr>
+
+    <h2>Reports</h2>
+    <h3>Revenue</h3>
+    <table border="1">
+        <tr>
+            <th>Total Revenue:</th>
+            <td id="totalRevenueValue"></td>
+        </tr>
+        <tr>
+            <th>Avg. Revenue Per User:</th>
+            <td id="avgRevenueValue"></td>
+        </tr>
+        <tr>
+            <th>Total Outstanding Bills:</th>
+            <td id="totalBillsValue"></td>
+        </tr>
+    </table>
+
+    <br>
+
+    <h3>Calls</h3>
+    <table border="1">
+        <tr>
+            <th>Total Minutes:</th>
+            <td id="totalMinutesValue"></td>
+        </tr>
+        <tr>
+            <th>Local Call Share:</th>
+            <td id="localShareValue"></td>
+        </tr>
+        <tr>
+            <th>National Call Share:</th>
+            <td id="nationalShareValue"></td>
+        </tr>
+        <tr>
+            <th>Avg. Call Duration:</th>
+            <td id="avgDurationValue"></td>
+        </tr>
+    </table>
+
+    <br>
+
+    <h2>User Search</h2>
+    <p>Search for a user by username:</p>
+    <input type='text' id='searchInput' onchange='userSearch()'>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>User ID</th>
+                <th>Username</th>
+                <th>Password</th>
+                <th>Plan</th>
+                <th>Total Minutes</th>
+            </tr>
+        </thead>
+        <tbody id="userTableBody"></tbody>
+    </table>
+
+    <br>
+    <hr>
+
+    <h2>Simulation</h2>
+
+    <p id="currentMonth">Current Simulation Month: </p>
+    <button type="button" onClick="nextMonth()">Next Month</button>
+    <p id="monthMessage"></p>
+
+    <br>
+
+    <button type="button" onClick="addUser()">Add 1 User</button>
+    <p id="oneUserMessage"></p>
+
+    <br>
+
+    <button type="button" onClick="addTenUsers()">Add 10 Users</button>
+    <p id="tenUsersMessage"></p>
+
+    <br>
+
+    <button type="button" onClick="addHundredCalls()">Add 100 Calls</button>
+    <p id="hundredCallsMessage"></p>
+
+    <br>
+
+    <button type="button" onClick="payAllBills()">Pay All Bills</button>
+    <p id="allBillsMessage"></p>
 
 </body>
 </html>
