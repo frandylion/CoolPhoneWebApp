@@ -130,100 +130,154 @@ async function checkPassword(input, password) {
 //  ##################
 //  ## Front Office ##
 //  ##################
-app.get('/transaction', async (req, res) => {
+// table to show all bills
+app.get('/userBills', async (req, res) => {
     const user_id = req.session.user_id;
+    const client = await pool.connect();
+    const sqlArray = [];
 
     try {
-        const result = await pool.query('SELECT * FROM transaction WHERE user_id = $1', [user_id]);
-        res.json(result.rows);
+        await client.query('BEGIN');
+        sqlArray.push('BEGIN');
+
+        // shows the bills
+        const billsQuery = 'SELECT bill_id, cost, due_date, paid FROM bill WHERE user_id = $1 ORDER BY bill_id DESC';
+        const billsResult = await client.query(billsQuery, [user_id]);
+        sqlArray.push(billsQuery);
+        
+        // shows the balance
+        const dueBalanceQuery = 'SELECT SUM(cost) AS total_due FROM bill WHERE user_id = $1 AND paid = false';
+        const dueBalance = await client.query(dueBalanceQuery, [user_id]);
+        sqlArray.push(dueBalanceQuery);
+
+        await client.query('COMMIT');
+        sqlArray.push('COMMIT');
+
+        res.status(200).json({
+            userBills: billsResult.rows,
+            dueBalance: dueBalance.rows[0].total_due || 0
+        });
     } catch (err) {
-        console.error('Error fetching transaction data:', err);
-        res.sendStatus(500);
-    }
-});
+        await client.query('ROLLBACK');
+        sqlArray.push('ROLLBACK');
 
-
-// route to fetch total sum for a specified user_id
-app.get('/transaction/sum/', async (req, res) => {
-    const user_id = req.session.user_id;
-
-    try {
-        const result = await pool.query(
-            'SELECT user_id, COALESCE(SUM(amount), 0) as total_amount FROM transaction WHERE user_id = $1 GROUP BY user_id',
-            [user_id]
-        );
-        res.json(result.rows[0]);
-    } catch (err) {
-        console.error('Error fetching summed transaction data:', err);
-        res.status(500).json({ error: 'Error calculating sum' });
-    }
-});
-
-
-//the function to make a payment
-app.post('/make_payment', async (req, res) => {
-    const user_id = req.session.user_id;
-    const payment_amount = req.body.payment_amount;
-
-    try {
-        await pool.query('BEGIN');
-
-        const balanceResult = await pool.query(
-            'SELECT balance FROM bank WHERE user_id = $1 FOR UPDATE', [user_id]
-        );
-         if (balanceResult.rows.length === 0) {
-            await pool.query('ROLLBACK');
-            return res.status(404).json({ message: 'user account not found' });
-        }
-
-        const userBalance = balanceResult.rows[0].balance;
-        if (userBalance < payment_amount) {
-            return res.status(400).json({ message: 'card declined' });
-        }
-
-        const updateBalance = await pool.query(
-            'UPDATE bank SET balance = balance - $1 WHERE user_id = $2',
-            [payment_amount, user_id]
-        );
-
-         const insertTransaction = await pool.query(
-            'INSERT INTO transaction (user_id, transaction_date, transaction_type, amount) VALUES ($1, NOW(), $2, $3)',
-            [user_id, 'payment', -payment_amount]
-        );
-
-        await pool.query('COMMIT');
-        res.status(200).json({ message: 'payment successful' });
-
-    } catch (error) {
-        await pool.query('ROLLBACK');
-        console.error('error ', error);
-        res.sendStatus(500);
-    }
-});
-
-
-app.get('/call_log', async (req, res) => {
-    const user_id = req.session.user_id;
-
-    try {
-        const result = await pool.query('SELECT * FROM call_log WHERE user_id = $1', [user_id]);
-        res.json(result.rows);
-    } catch (err) {
         console.error('error ', err);
         res.sendStatus(500);
+    } finally {
+        client.release();
+        saveSQL(sqlArray);
     }
 });
+
+
+// app.get('/transaction', async (req, res) => {
+//     const user_id = req.session.user_id;
+
+//     try {
+//         const result = await pool.query('SELECT * FROM transaction WHERE user_id = $1', [user_id]);
+//         res.json(result.rows);
+//     } catch (err) {
+//         console.error('Error fetching transaction data:', err);
+//         res.sendStatus(500);
+//     }
+// });
+
+
+// // route to fetch total sum for a specified user_id
+// app.get('/transaction/sum/', async (req, res) => {
+//     const user_id = req.session.user_id;
+
+//     try {
+//         const result = await pool.query(
+//             'SELECT user_id, COALESCE(SUM(amount), 0) as total_amount FROM transaction WHERE user_id = $1 GROUP BY user_id',
+//             [user_id]
+//         );
+//         res.json(result.rows[0]);
+//     } catch (err) {
+//         console.error('Error fetching summed transaction data:', err);
+//         res.status(500).json({ error: 'Error calculating sum' });
+//     }
+// });
+
+
+// // the function to make a payment
+// app.post('/make_payment', async (req, res) => {
+//     const user_id = req.session.user_id;
+//     const payment_amount = req.body.payment_amount;
+
+//     try {
+//         await pool.query('BEGIN');
+
+//         const balanceResult = await pool.query(
+//             'SELECT balance FROM bank WHERE user_id = $1 FOR UPDATE', [user_id]
+//         );
+//          if (balanceResult.rows.length === 0) {
+//             await pool.query('ROLLBACK');
+//             return res.status(404).json({ message: 'user account not found' });
+//         }
+
+//         const userBalance = balanceResult.rows[0].balance;
+//         if (userBalance < payment_amount) {
+//             return res.status(400).json({ message: 'card declined' });
+//         }
+
+//         const updateBalance = await pool.query(
+//             'UPDATE bank SET balance = balance - $1 WHERE user_id = $2',
+//             [payment_amount, user_id]
+//         );
+
+//          const insertTransaction = await pool.query(
+//             'INSERT INTO transaction (user_id, transaction_date, transaction_type, amount) VALUES ($1, NOW(), $2, $3)',
+//             [user_id, 'payment', -payment_amount]
+//         );
+
+//         await pool.query('COMMIT');
+//         res.status(200).json({ message: 'payment successful' });
+
+//     } catch (error) {
+//         await pool.query('ROLLBACK');
+//         console.error('error ', error);
+//         res.sendStatus(500);
+//     }
+// });
+
+
+// app.get('/call_log', async (req, res) => {
+//     const user_id = req.session.user_id;
+
+//     try {
+//         const result = await pool.query('SELECT * FROM call_log WHERE user_id = $1', [user_id]);
+//         res.json(result.rows);
+//     } catch (err) {
+//         console.error('error ', err);
+//         res.sendStatus(500);
+//     }
+// });
 
 
 app.get('/user', async (req, res) => {
     const user_id = req.session.user_id;
+    const client = await pool.connect();
+    const sqlArray = [];
 
     try {
-        const result = await pool.query('SELECT * FROM users WHERE user_id = $1', [user_id]);
-        res.json(result.rows);
+        await client.query('BEGIN');
+        sqlArray.push('BEGIN');
+
+        const userQuery = 'SELECT * FROM users WHERE user_id = $1';
+        const userResult = await client.query(userQuery, [user_id]);
+        sqlArray.push(userQuery);
+
+        await client.query('COMMIT');
+        sqlArray.push('COMMIT');
+
+        res.status(200).json(userResult.rows[0]);
     } catch (err) {
         console.error('error ', err);
         res.sendStatus(500);
+    } finally {
+        client.release();
+        saveSQL(sqlArray);
     }
 });
 

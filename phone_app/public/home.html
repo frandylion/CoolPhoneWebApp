@@ -6,80 +6,96 @@
     <title>Welcome back to CoolPhoneApp!</title>
     <script>
 
-        async function getTransactions() {
-                const response = await fetch(`http://localhost:3000/transaction`);
-                const transactions = await response.json();
-                const table = document.getElementById('transactionTable');
-                table.innerHTML = '';
+        // async function getTransactions() {
+        //     const response = await fetch(`http://localhost:3000/transaction`);
+        //     const transactions = await response.json();
+        //     const table = document.getElementById('transactionTable');
+        //     table.innerHTML = '';
 
-                transactions.forEach(transaction => {
-                    const row = `
-                        <tr>
-                            <td>${transaction.user_id}</td>
-                            <td>${transaction.transaction_id}</td>
-                            <td>${transaction.transaction_date}</td>
-                            <td>${transaction.transaction_type}</td>
-                            <td>${transaction.amount}</td>
-                        </tr>
-                    `;
-                    table.innerHTML += row;
-                });
-        }
+        //     transactions.forEach(transaction => {
+        //         const row = `
+        //             <tr>
+        //                 <td>${transaction.user_id}</td>
+        //                 <td>${transaction.transaction_id}</td>
+        //                 <td>${transaction.transaction_date}</td>
+        //                 <td>${transaction.transaction_type}</td>
+        //                 <td>${transaction.amount}</td>
+        //             </tr>
+        //         `;
+        //         table.innerHTML += row;
+        //     });
+        // }
 
-        async function getUserTotalAmount() {
-            try {
-                const response = await fetch(`http://localhost:3000/transaction/sum`);
-                const data = await response.json();
+        async function getBills() {
+            const response = await fetch(`http://localhost:3000/userBills`);
+            const data = await response.json();
+            const due_balance = data.dueBalance;
+            const bill_rows = data.userBills;
 
-                const totalAmountElement = document.getElementById('userTotalAmount');
-                if (data && data.total_amount !== undefined) {
-                    const formattedAmount = Number(data.total_amount || 0).toFixed(2);
-                    // the negatives and postives values are messed up and need to be resolved for phase two
-                    // for phase 2 we could display the user's name instead of id with a join query
-                    totalAmountElement.textContent = `account ${data.user_id}: balance due = $${formattedAmount}`;
-                } else {
-                    totalAmountElement.textContent = `account ${data.user_id}: balance due = $0.00`;
-                }
-            } catch (error) {
-                console.error('error', error);
-                const totalAmountElement = document.getElementById('userTotalAmount');
+            // display balance
+            const balanceElement = document.getElementById('dueBalance');
+            balanceElement.textContent = `Outstanding balance: $${Number(due_balance).toFixed(2)}`;
+
+            // display bills table
+            const table = document.getElementById('billTableBody');
+            table.innerHTML = '';
+
+            for (bill of bill_rows) {
+                const row = `
+                    <tr>
+                        <td>${bill.bill_id}</td>
+                        <td>${bill.cost}</td>
+                        <td>${bill.due_date.split('T')[0]}</td>
+                        <td>${bill.paid}</td>
+                    </tr>
+                `;
+                table.innerHTML += row;
             }
         }
 
-        async function makePayment() {
-            const paymentAmount = document.getElementById('paymentAmount').value;
-            const user_id = await getUser().user_id;
+        // async function makePayment() {
+        //     const paymentAmount = document.getElementById('paymentAmount').value;
+        //     const user_id = await getUser().user_id;
 
-            const response = await fetch('http://localhost:3000/make_payment', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({payment_amount: parseFloat(paymentAmount)})
-            });
+        //     const response = await fetch('http://localhost:3000/make_payment', {
+        //         method: 'POST',
+        //         headers: {'Content-Type': 'application/json'},
+        //         body: JSON.stringify({payment_amount: parseFloat(paymentAmount)})
+        //     });
 
-            const result = await response.json();
-            document.getElementById('paymentStatus').textContent = result.message;
-            getTransactions();
-            getUserTotalAmount();
-        }
+        //     const result = await response.json();
+        //     document.getElementById('paymentStatus').textContent = result.message;
+        //     getTransactions();
+        //     getUserTotalAmount();
+        // }
 
-        async function getCallLog() {
-            const response = await fetch(`http://localhost:3000/call_log`);
-            const calls = await response.json();
-            const table = document.getElementById('callTable');
-            table.innerHTML = '';
+        // async function getCallLog() {
+        //     const response = await fetch(`http://localhost:3000/call_log`);
+        //     const calls = await response.json();
+        //     const table = document.getElementById('callTable');
+        //     table.innerHTML = '';
 
-            calls.forEach(call_log => {
-                const row = `
-                    <tr>
-                        <td>${call_log.user_id}</td>
-                        <td>${call_log.call_id}</td>
-                        <td>${call_log.duration}</td>
-                        <td>${call_log.call_date_time}</td>
-                        <td>${call_log.call_type}</td>
-                     </tr>
-                `;
-                table.innerHTML += row;
-            });
+        //     calls.forEach(call_log => {
+        //         const row = `
+        //             <tr>
+        //                 <td>${call_log.user_id}</td>
+        //                 <td>${call_log.call_id}</td>
+        //                 <td>${call_log.duration}</td>
+        //                 <td>${call_log.call_date_time}</td>
+        //                 <td>${call_log.call_type}</td>
+        //              </tr>
+        //         `;
+        //         table.innerHTML += row;
+        //     });
+        // }
+
+        async function welcome() {
+            const user_json = await getUser();
+            const first_name = user_json.first_name;
+            const last_name = user_json.last_name;
+
+            const message = document.getElementById('welcomeMessage');
+            message.textContent = `Welcome back, ${first_name} ${last_name}!`;
         }
 
         async function getUser() {
@@ -88,27 +104,27 @@
         }
 
         window.onload = function() {
-            getTransactions();
-            getUserTotalAmount();
-            getCallLog();
+            welcome();
+            getBills();
+            // getTransactions();
+            // getCallLog();
         };
     </script>
 </head>
 <body>
 
-    <h1>User Transactions</h1>
-    <h2 id="userTotalAmount">Total Amount for User</h2>
+    <h1 id="welcomeMessage">Welcome back, !</h1>
+    <h2 id="dueBalance">Outstanding balance: $0.00</h2>
     <table border="1">
         <thead>
             <tr>
-                <th>User ID</th>
-                <th>Transaction ID</th>
-                <th>Transaction Date</th>
-                <th>Transaction Type</th>
+                <th>Bill ID</th>
                 <th>Amount</th>
+                <th>Date Due</th>
+                <th>Paid</th>
             </tr>
         </thead>
-        <tbody id="transactionTable"></tbody>
+        <tbody id="billTableBody"></tbody>
     </table>
 
     <form id="paymentForm">

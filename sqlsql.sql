@@ -10,7 +10,6 @@ app.get('/adminView', async (req, res) => {
         await client.query('BEGIN');
         sqlArray.push('BEGIN');
 
-
         const adminCheckQuery = 'SELECT role FROM users WHERE user_id = $1';
         const adminResult = await client.query(adminCheckQuery, [user_id]);
         sqlArray.push(adminCheckQuery);
@@ -57,7 +56,7 @@ app.get('/userBills', async (req, res) => {
         sqlArray.push(billsQuery);
 --shows the balance
         const balanceQuery = 'SELECT SUM(cost) AS total_due FROM bill WHERE user_id = $1 AND paid = false';
-        const dueBalancet = await client.query(dueBalanceQuery, [user_id]);
+        const dueBalance = await client.query(dueBalanceQuery, [user_id]);
         sqlArray.push(balanceQuery);
 
         await client.query('COMMIT');
