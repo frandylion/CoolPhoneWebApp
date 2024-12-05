@@ -162,13 +162,13 @@ app.post('/auth', async (req, res) => {
                     res.redirect('/home');
                 } else {
                     // TODO: fix bad login to not change page
-                    res.status(400).send('Incorrect username and/or password.');
+                    res.status(400).send(`<h3>Incorrect username and/or password.</h3><a href='http://localhost:3000/'>Go back.</a>`);
                 }
             } else {
-                res.status(400).send('No user found with that username.');
+                res.status(400).send(`<h3>No user found with that username.</h3><a href='http://localhost:3000/'>Go back.</a>`);
             }
         } else {
-            res.status(400).send('Please enter username and password.');
+            res.status(400).send(`<h3>zPlease enter username and password.</h3><a href='http://localhost:3000/'>Go back.</a>`);
         }
 
         sqlArray.push('END TRANSACTION');
@@ -593,7 +593,8 @@ async function queryUserSearch(term, client, sqlArray) {
             u.password AS password,
             CONCAT(up.plan_type, ' ', up.payment_type) AS plan,
             um.minutes AS total_minutes,
-            ud.data as total_data
+            ud.data as total_data,
+            u.admin as admin
         FROM users u
         JOIN user_plan up ON up.user_id = u.user_id
         LEFT JOIN user_minutes um ON um.user_id = u.user_id

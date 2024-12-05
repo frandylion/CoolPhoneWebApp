@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Portal!</title>
+    <title>CoolPhoneApp - Admin!</title>
     <script>
 
         async function getRevenueReport() {
@@ -72,6 +72,7 @@
                         <td>${user.plan}</td>
                         <td>${Number(user.total_minutes).toFixed(2)} minutes</td>
                         <td>${user.total_data} MiB</td>
+                        <td>${user.admin ? 'Yes' : 'No'}</td>
                     </tr>
                 `;
                 table.innerHTML += row;
@@ -224,6 +225,7 @@
                     <th>Plan</th>
                     <th>Total Minutes</th>
                     <th>Total Data</th>
+                    <th>Is Admin</th>
                 </tr>
             </thead>
             <tbody id="userTableBody"></tbody>
