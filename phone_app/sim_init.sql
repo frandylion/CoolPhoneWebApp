@@ -96,7 +96,7 @@ INSERT INTO phone VALUES ('HMD 110', 'Nokia');
 INSERT INTO phone VALUES ('HMD 3210', 'Nokia');
 
 
--- 
+-- call_log
 CREATE TABLE call_log (
 call_id SERIAL,
 user_id INT,

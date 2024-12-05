@@ -94,20 +94,22 @@
         }
 
         async function addHundredCalls() {
+            const monthYear = await getMonth();
             const promises = [];
             for (let i = 0; i < 100; i++) {
-                promises.push(fetch(`http://localhost:3000/addCall`));
+                promises.push(fetch(`http://localhost:3000/addCall/${monthYear}`));
             }
             await Promise.all(promises);
             
-            await generateAllBills();
+            await generateAllBills(monthYear);
             getRevenueReport();
             getCallReport();
             userSearch();
         }
 
-        async function generateAllBills() {
-            
+        async function generateAllBills(monthYear) {
+            await fetch(`http://localhost:3000/generateBills/${monthYear}`);
+            getRevenueReport();
         }
 
         async function payAllBills() {
@@ -115,15 +117,41 @@
             getRevenueReport();
         }
 
-        async function nextMonth() {
+        async function addMonth(monthYear) {
+            const month = Number(monthYear.split('-')[0]);
+            const year = Number(monthYear.split('-')[1]);
 
+            if (month == 12) {
+                return `1-${year + 1}`;
+            } else {
+                return `${month + 1}-${year}`;
+            }
+        }
+
+        async function nextMonth() {
+            const monthYear = await addMonth(await getMonth());
+
+            const promises = [];
+            for (let i = 0; i < 100; i++) {
+                promises.push(fetch(`http://localhost:3000/addCall/${monthYear}`));
+            }
+            promises.push(fetch(`http://localhost:3000/generateData/${monthYear}`));
+            await Promise.all(promises);
+
+            await fetch(`http://localhost:3000/generateBills/${monthYear}`);
+
+            getMonth()
+            getRevenueReport();
+            getCallReport();
+            userSearch();
         }
 
         async function getMonth() {
             const response = await fetch(`http://localhost:3000/getMonth`);
-            const monthYear = (await response.json()).split('-', 2).reverse().join('/');
+            const monthYear = (await response.json()).split('-', 2).reverse().join('-');
             const monthElement = document.getElementById('currentMonth');
             monthElement.textContent = `Current Simulation Month: ${monthYear}`;
+            return monthYear;
         }
 
         window.onload = function() {

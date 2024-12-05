@@ -857,14 +857,17 @@ app.get('/getMonth', async (req, res) => {
 });
 
 
-app.get('/addCall', async (req, res) => {
+app.get('/addCall/:monthYear', async (req, res) => {
+    const monthYear = req.params.monthYear;
+
     // generate call values
     let user_id; // get random user from database
     const duration = Number(await weightedRandomDuration());
     let datetime; // construct the datetime
-    let date; // get current month from database
-    let day; // get random day based on month
-    const days_array = [31,29,31,30,31,30,31,31,30,31,30,31]; // for how many days in each month
+    const month = monthYear.split('-')[0];
+    const year = monthYear.split('-')[1];
+    const days_array = [31,28,31,30,31,30,31,31,30,31,30,31]; // for how many days in each month
+    const day = Math.floor(Math.random() * days_array[month-1]) + 1;
     const time = `${Math.floor(Math.random() * 24)}:${Math.floor(Math.random() * 60)}:${Math.floor(Math.random() * 60)}`;
     const call_type = (Math.random() < 0.7 ? 'Local' : 'National');
     const num_called = await randInt(10);
@@ -881,14 +884,8 @@ app.get('/addCall', async (req, res) => {
         sqlArray.push(randUserQuery);
         user_id = (await client.query(randUserQuery)).rows[0].user_id;
 
-        // get current year and month
-        date = await queryMonth(client, sqlArray);
-
-        // get random day in the month
-        day = Math.floor(Math.random() * (days_array[date.getMonth()])) + 1;
-
         // concatenate the timestamp
-        datetime = `${date.getFullYear()}-${date.getMonth()+1}-${day} ${time}`;
+        datetime = `${year}-${month}-${day} ${time}`;
 
         // insert values
         const insertCallQuery = 'INSERT INTO call_log VALUES (default, $1, $2, $3, $4, $5)';
@@ -957,49 +954,158 @@ app.get('/payAllBills', async (req, res) => {
 });
 
 
-// // generate all bills
-// app.get('/generateBills', async (req, res) => {
-//     const client = await pool.connect();
-//     const sqlArray = [];
+async function generateBillsQuery(monthYear, client, sqlArray) {
+    const year = Number(monthYear.split('-')[1]);
+    const month = Number(monthYear.split('-')[0]);
 
-//     try {
-//         sqlArray.push('START TRANSACTION');
-//         await client.query('START TRANSACTION');
+    // delete old bills being replaced if any
+    const deleteQuery = `
+        DELETE FROM bill
+        WHERE EXTRACT(YEAR FROM (due_date - INTERVAL '1 month')) = $1
+          AND EXTRACT(MONTH FROM (due_date - INTERVAL '1 month')) = $2
+    `;
+    sqlArray.push(deleteQuery.replace('$1', year.toString()).replace('$2', month.toString()));
+    const deleteResult = await client.query(deleteQuery, [year, month]);
 
-//         // create transactions
-//         const transactionQuery = `
-//             INSERT INTO transaction (bill_id, date_paid)
-//             SELECT bill_id, CURRENT_DATE
-//             FROM bill
-//             WHERE paid = false
-//         `;
-//         sqlArray.push(transactionQuery);
-//         const transactionResult = await client.query(transactionQuery);
+    // generate new bills for every user
+    const generateQuery = `
+        WITH
+            monthly_call_totals AS (
+                SELECT 
+                    user_id, 
+                    EXTRACT(MONTH FROM call_date_time) AS bill_month,
+                    EXTRACT(YEAR FROM call_date_time) AS bill_year,
+                    SUM(CASE WHEN call_type = 'Local' THEN duration ELSE 0 END) AS total_local_minutes,
+                    SUM(CASE WHEN call_type = 'National' THEN duration ELSE 0 END) AS total_national_minutes
+                FROM call_log
+                WHERE EXTRACT(YEAR FROM call_date_time) = $1
+                  AND EXTRACT(MONTH FROM call_date_time) = $2
+                GROUP BY user_id, bill_month, bill_year
+            ),
+            local_cost AS (
+                SELECT cost_per_minute 
+                FROM call_type 
+                WHERE type_name = 'Local'
+                LIMIT 1
+            ),
+            national_cost AS (
+                SELECT cost_per_minute
+                FROM call_type
+                WHERE type_name = 'National'
+                LIMIT 1
+            )
+        INSERT INTO bill (user_id, cost, due_date, paid)
+        SELECT
+            u.user_id,
+            CASE
+                WHEN up.payment_type = 'Prepaid' THEN p.data_cost
+                WHEN up.payment_type = 'Postpaid' THEN
+                    p.data_cost + 
+                    (mct.total_local_minutes * lc.cost_per_minute) + 
+                    (mct.total_national_minutes * nc.cost_per_minute)
+            END AS bill_cost,
+            -- sets due date to the 5th of the next month
+            DATE(CONCAT(
+                CASE 
+                    WHEN mct.bill_month = 12 THEN mct.bill_year + 1 
+                    ELSE mct.bill_year 
+                END, 
+                '-', 
+                CASE 
+                    WHEN mct.bill_month = 12 THEN 1 
+                    ELSE mct.bill_month + 1 
+                END, 
+                '-5'
+            )) AS due_date,
+            false AS paid
+        FROM users u
+        JOIN user_plan up ON u.user_id = up.user_id
+        JOIN plan p ON up.plan_type = p.plan_type AND up.payment_type = p.payment_type
+        JOIN monthly_call_totals mct ON u.user_id = mct.user_id
+        CROSS JOIN local_cost lc
+        CROSS JOIN national_cost nc;
+    `;
+    sqlArray.push(generateQuery.replace('$1', year.toString()).replace('$2', month.toString()));
+    const generateResult = await client.query(generateQuery, [year, month]);
+}
 
-//         // set bills to paid
-//         const paidQuery = `
-//             UPDATE bill
-//             SET paid = true
-//             WHERE paid = false
-//         `;
-//         sqlArray.push(paidQuery);
-//         const paidResult = await client.query(paidQuery);
 
-//         sqlArray.push('END TRANSACTION');
-//         await client.query('END TRANSACTION');
+// generate all bills
+app.get('/generateBills/:monthYear', async (req, res) => {
+    const monthYear = req.params.monthYear;
+    const client = await pool.connect();
+    const sqlArray = [];
 
-//         res.sendStatus(200);
-//     } catch (err) {
-//         sqlArray.push('ROLLBACK');
-//         await client.query('ROLLBACK');
+    try {
+        sqlArray.push('START TRANSACTION');
+        await client.query('START TRANSACTION');
 
-//         console.error('error', err);
-//         res.sendStatus(500);
-//     } finally {
-//         client.release();
-//         saveSQL(sqlArray);
-//     }
-// });
+        await generateBillsQuery(monthYear, client, sqlArray);
+
+        sqlArray.push('END TRANSACTION');
+        await client.query('END TRANSACTION');
+
+        res.sendStatus(200);
+    } catch (err) {
+        sqlArray.push('ROLLBACK');
+        await client.query('ROLLBACK');
+
+        console.error('error', err);
+        res.sendStatus(500);
+    } finally {
+        client.release();
+        saveSQL(sqlArray);
+    }
+});
+
+
+// generate data for each user
+app.get('/generateData/:monthYear', async (req, res) => {
+    const monthYear = req.params.monthYear;
+    const date = monthYear.split('-').reverse().join('-') + '-01';
+    const client = await pool.connect();
+    const sqlArray = [];
+
+    try {
+        sqlArray.push('START TRANSACTION');
+        await client.query('START TRANSACTION');
+
+        const dataInsertQuery = `
+            INSERT INTO data_log (user_id, month, monthly_data_mib, data_used_mib)
+            SELECT 
+                u.user_id,
+                $1 AS month,
+                p.data_limit_mib AS monthly_data_mib,
+                FLOOR(RANDOM() * (p.data_limit_mib + 1)) AS data_used_mib
+            FROM users u
+            JOIN user_plan up ON u.user_id = up.user_id
+            JOIN plan p ON up.plan_type = p.plan_type 
+             AND up.payment_type = p.payment_type
+            WHERE NOT EXISTS (
+                SELECT 1 
+                FROM data_log dl 
+                WHERE dl.user_id = u.user_id 
+                AND dl.month = $1
+            );
+        `;
+        sqlArray.push(dataInsertQuery.replace('$1', date));
+        const dataInsertResult = await client.query(dataInsertQuery, [date]);
+
+        sqlArray.push('END TRANSACTION');
+        await client.query('END TRANSACTION');
+
+        res.sendStatus(200);
+    } catch (err) {
+        sqlArray.push('ROLLBACK');
+        await client.query('ROLLBACK');
+
+        console.error('error', err);
+        res.sendStatus(500);
+    } finally {
+        client.release();
+        saveSQL(sqlArray);
+    }
+});
 
 
 //  ######################
