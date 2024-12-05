@@ -83,22 +83,45 @@
         }
 
         async function addTenUsers() {
+            const promises = [];
             for (let i = 0; i < 10; i++) {
-                const response = await fetch(`http://localhost:3000/addUser`);
+                promises.push(fetch(`http://localhost:3000/addUser`));
             }
+            await Promise.all(promises);
+
             userSearch();
         }
 
         async function addHundredCalls() {
+            const promises = [];
+            for (let i = 0; i < 100; i++) {
+                promises.push(fetch(`http://localhost:3000/addCall`));
+            }
+            await Promise.all(promises);
+            
+            await generateAllBills();
+            getRevenueReport();
+            getCallReport();
+            userSearch();
+        }
 
+        async function generateAllBills() {
+            
         }
 
         async function payAllBills() {
+
+        }
+
+        async function nextMonth() {
             
         }
 
         async function getMonth() {
-            
+            const response = await fetch(`http://localhost:3000/getMonth`);
+            const monthYear = (await response.json()).split('-', 2).reverse().join('/');
+            const monthElement = document.getElementById('currentMonth');
+            monthElement.textContent = `Current Simulation Month: ${monthYear}`;
         }
 
         window.onload = function() {
@@ -158,8 +181,9 @@
     <br>
 
     <h2>User Search</h2>
-    <p>Search for a user by username (ENTER to search):</p>
     <input type='text' id='searchInput' onchange='userSearch()'>
+    <label>Search for a user by username (ENTER to search):</label>
+    <br><br>
     <table border="1">
         <thead>
             <tr>
@@ -178,29 +202,25 @@
 
     <h2>Simulation</h2>
 
-    <p id="currentMonth">Current Simulation Month: </p>
+    <h3 id="currentMonth">Current Simulation Month: </h3>
     <button type="button" onClick="nextMonth()">Next Month</button>
-    <p id="monthMessage"></p>
+    <label>Moves the simulation to the next month, generates 100 calls for the new month, and generates bills.</label>
 
-    <br>
+    <br><br>
 
     <button type="button" onClick="addUser()">Add 1 User</button>
-    <p id="oneUserMessage"></p>
 
-    <br>
+    <br><br>
 
     <button type="button" onClick="addTenUsers()">Add 10 Users</button>
-    <p id="tenUsersMessage"></p>
 
-    <br>
+    <br><br>
 
     <button type="button" onClick="addHundredCalls()">Add 100 Calls</button>
-    <p id="hundredCallsMessage"></p>
 
-    <br>
+    <br><br>
 
     <button type="button" onClick="payAllBills()">Pay All Bills</button>
-    <p id="allBillsMessage"></p>
 
 </body>
 </html>

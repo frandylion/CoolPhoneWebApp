@@ -27,7 +27,10 @@ app.use(cors()); // Enable CORS for cross-origin requests
 app.use(session({
     secret: 'secret',
     resave: true,
-    saveUninitialized: true
+    saveUninitialized: true,
+    cookie : {
+        sameSite: 'strict',
+    }
 }));
 app.use(express.json());
 app.use(bodyParser.json());
@@ -50,6 +53,10 @@ async function saveSQL(lines) {
         // combine the array of inputs into a multiline string
         let output = "";
         for (const line of lines) {
+            // skip empty lines
+            if (!line) {
+                continue;
+            }
             output += line + ';\n\n';
         }
         // add spacing between blocks of output for readability
@@ -127,13 +134,13 @@ app.post('/auth', async (req, res) => {
 
         // check that the input fields are not empty
         if (username && password) {
-            await client.query('BEGIN');
-            sqlArray.push('BEGIN');
+            sqlArray.push('START TRANSACTION');
+            await client.query('START TRANSACTION');
 
             // Query the database to find the user
             const userQuery = 'SELECT user_id, username, password FROM users WHERE username = $1';
-            const userResult = await client.query(userQuery, [username]);
             sqlArray.push(userQuery.replace('$1', username));
+            const userResult = await client.query(userQuery, [username]);
 
             // if user is found
             if (userResult.rows.length > 0) {
@@ -159,11 +166,11 @@ app.post('/auth', async (req, res) => {
             res.status(400).send('Please enter username and password.');
         }
 
-        await client.query('COMMIT');
-        sqlArray.push('COMMIT');
+        sqlArray.push('END TRANSACTION');
+        await client.query('END TRANSACTION');
     } catch (err) {
-        await client.query('ROLLBACK');
         sqlArray.push('ROLLBACK');
+        await client.query('ROLLBACK');
 
         console.error('error ', err);
         res.sendStatus(500);
@@ -190,8 +197,8 @@ app.get('/userBills', async (req, res) => {
     const sqlArray = [];
 
     try {
-        await client.query('BEGIN');
-        sqlArray.push('BEGIN');
+        sqlArray.push('START TRANSACTION');
+        await client.query('START TRANSACTION');
 
         // shows the bills and the total minutes and data used for that bill period
         const billsQuery = `
@@ -214,24 +221,24 @@ app.get('/userBills', async (req, res) => {
             ORDER BY b.bill_id DESC
             LIMIT 100
         `;
-        const billsResult = await client.query(billsQuery, [user_id]);
         sqlArray.push(billsQuery.replace('$1', user_id.toString()));
+        const billsResult = await client.query(billsQuery, [user_id]);
         
         // shows the balance
         const dueBalanceQuery = 'SELECT SUM(cost) AS total_due FROM bill WHERE user_id = $1 AND paid = false';
-        const dueBalance = await client.query(dueBalanceQuery, [user_id]);
         sqlArray.push(dueBalanceQuery.replace('$1', user_id.toString()));
+        const dueBalance = await client.query(dueBalanceQuery, [user_id]);
 
-        await client.query('COMMIT');
-        sqlArray.push('COMMIT');
+        sqlArray.push('END TRANSACTION');
+        await client.query('END TRANSACTION');
 
         res.status(200).json({
             userBills: billsResult.rows,
             dueBalance: dueBalance.rows[0].total_due || 0
         });
     } catch (err) {
-        await client.query('ROLLBACK');
         sqlArray.push('ROLLBACK');
+        await client.query('ROLLBACK');
 
         console.error('error ', err);
         res.sendStatus(500);
@@ -249,8 +256,8 @@ app.get('/payBills', async (req, res) => {
     const sqlArray = [];
 
     try {
-        await client.query('BEGIN');
-        sqlArray.push('BEGIN');
+        sqlArray.push('START TRANSACTION');
+        await client.query('START TRANSACTION');
 
         // create transactions
         const transactionQuery = `
@@ -259,8 +266,8 @@ app.get('/payBills', async (req, res) => {
             FROM bill
             WHERE user_id = $1 AND paid = false
         `;
-        const transactionResult = await client.query(transactionQuery, [user_id]);
         sqlArray.push(transactionQuery.replace('$1', user_id.toString()));
+        const transactionResult = await client.query(transactionQuery, [user_id]);
 
         // set bills to paid
         const paidQuery = `
@@ -268,16 +275,16 @@ app.get('/payBills', async (req, res) => {
             SET paid = true
             WHERE user_id = $1 AND paid = false
         `;
-        const paidResult = await client.query(paidQuery, [user_id]);
         sqlArray.push(paidQuery.replace('$1', user_id.toString()));
+        const paidResult = await client.query(paidQuery, [user_id]);
 
-        await client.query('COMMIT');
-        sqlArray.push('COMMIT');
+        sqlArray.push('END TRANSACTION');
+        await client.query('END TRANSACTION');
 
         res.sendStatus(200);
     } catch (err) {
-        await client.query('ROLLBACK');
         sqlArray.push('ROLLBACK');
+        await client.query('ROLLBACK');
 
         console.error('error', err);
         res.sendStatus(500);
@@ -294,8 +301,8 @@ app.get('/userTransactions', async (req, res) => {
     const sqlArray = [];
 
     try {
-        await client.query('BEGIN');
-        sqlArray.push('BEGIN');
+        sqlArray.push('START TRANSACTION');
+        await client.query('START TRANSACTION');
 
         // fetches transactions and joins bill table
         const transactionsQuery = `
@@ -310,16 +317,16 @@ app.get('/userTransactions', async (req, res) => {
             ORDER BY t.bill_id DESC
             LIMIT 100
         `;
-        const result = await client.query(transactionsQuery, [user_id]);
         sqlArray.push(transactionsQuery.replace('$1', user_id.toString()));
+        const result = await client.query(transactionsQuery, [user_id]);
 
-        await client.query('COMMIT');
-        sqlArray.push('COMMIT');
+        sqlArray.push('END TRANSACTION');
+        await client.query('END TRANSACTION');
 
         res.status(200).json(result.rows);
     } catch (err) {
-        await client.query('ROLLBACK');
         sqlArray.push('ROLLBACK');
+        await client.query('ROLLBACK');
 
         console.error('error', err);
         res.sendStatus(500);
@@ -336,8 +343,8 @@ app.get('/userCalls', async (req, res) => {
     const sqlArray = [];
 
     try {
-        await client.query('BEGIN');
-        sqlArray.push('BEGIN');
+        sqlArray.push('START TRANSACTION');
+        await client.query('START TRANSACTION');
 
         // get call log records
         const callsQuery = `
@@ -353,16 +360,16 @@ app.get('/userCalls', async (req, res) => {
             ORDER BY cl.call_date_time DESC
             LIMIT 100
         `;
-        const result = await client.query(callsQuery, [user_id]);
         sqlArray.push(callsQuery.replace('$1', user_id.toString()));
+        const result = await client.query(callsQuery, [user_id]);
 
-        await client.query('COMMIT');
-        sqlArray.push('COMMIT');
+        sqlArray.push('END TRANSACTION');
+        await client.query('END TRANSACTION');
 
         res.status(200).json(result.rows);
     } catch (err) {
-        await client.query('ROLLBACK');
         sqlArray.push('ROLLBACK');
+        await client.query('ROLLBACK');
 
         console.error('error', err);
         res.sendStatus(500);
@@ -379,15 +386,15 @@ app.get('/user', async (req, res) => {
     const sqlArray = [];
 
     try {
-        await client.query('BEGIN');
-        sqlArray.push('BEGIN');
+        sqlArray.push('START TRANSACTION');
+        await client.query('START TRANSACTION');
 
         const userQuery = 'SELECT * FROM users WHERE user_id = $1';
-        const userResult = await client.query(userQuery, [user_id]);
         sqlArray.push(userQuery.replace('$1', user_id.toString()));
+        const userResult = await client.query(userQuery, [user_id]);
 
-        await client.query('COMMIT');
-        sqlArray.push('COMMIT');
+        sqlArray.push('END TRANSACTION');
+        await client.query('END TRANSACTION');
 
         res.status(200).json(userResult.rows[0]);
     } catch (err) {
@@ -407,12 +414,12 @@ app.post('/adminView', async (req, res) => {
     const sqlArray = [];
 
     try {
-        await client.query('BEGIN');
-        sqlArray.push('BEGIN');
+        sqlArray.push('START TRANSACTION');
+        await client.query('START TRANSACTION');
 
         const adminQuery = 'SELECT * FROM users WHERE user_id = $1 AND admin = true';
-        const adminResult = await client.query(adminQuery, [user_id]);
         sqlArray.push(adminQuery.replace('$1', user_id.toString()));
+        const adminResult = await client.query(adminQuery, [user_id]);
 
         if (adminResult.rows.length > 0) {
             // redirect to admin page
@@ -422,11 +429,11 @@ app.post('/adminView', async (req, res) => {
             res.redirect('/home');
         }
 
-        await client.query('COMMIT');
-        sqlArray.push('COMMIT');
+        sqlArray.push('END TRANSACTION');
+        await client.query('END TRANSACTION');
     } catch (err) {
-        await client.query('ROLLBACK');
         sqlArray.push('ROLLBACK');
+        await client.query('ROLLBACK');
 
         console.error('error ', err);
         res.sendStatus(500);
@@ -445,13 +452,13 @@ app.get('/revenueReport', async (req, res) => {
     const sqlArray = [];
 
     try {
-        await client.query('BEGIN');
-        sqlArray.push('BEGIN');
+        sqlArray.push('START TRANSACTION');
+        await client.query('START TRANSACTION');
 
         // total revenue
         const revenueQuery = 'SELECT SUM(cost) AS total_revenue FROM bill WHERE paid = true';
-        const totalRevenue = await client.query(revenueQuery);
         sqlArray.push(revenueQuery);
+        const totalRevenue = await client.query(revenueQuery);
 
         // average revenue per user
         const averageQuery = `
@@ -465,16 +472,16 @@ app.get('/revenueReport', async (req, res) => {
             SELECT AVG(revenue) AS avg_revenue
             FROM revenue_per_user
         `;
-        const avgRevenue = await client.query(averageQuery);
         sqlArray.push(averageQuery);
+        const avgRevenue = await client.query(averageQuery);
 
         // unpaid bills
         const billsQuery = 'SELECT SUM(cost) AS outstanding_bills FROM bill WHERE paid = false';
-        const billsResult = await client.query(billsQuery);
         sqlArray.push(billsQuery);
+        const billsResult = await client.query(billsQuery);
 
-        await client.query('COMMIT');
-        sqlArray.push('COMMIT');
+        sqlArray.push('END TRANSACTION');
+        await client.query('END TRANSACTION');
 
         res.status(200).json({
             totalRevenue: totalRevenue.rows[0].total_revenue || 0,
@@ -482,8 +489,8 @@ app.get('/revenueReport', async (req, res) => {
             outstandingBills: billsResult.rows[0].outstanding_bills || 0
         });
     } catch (err) {
-        await client.query('ROLLBACK');
         sqlArray.push('ROLLBACK');
+        await client.query('ROLLBACK');
 
         console.error('Error:', err);
         res.sendStatus(500);
@@ -494,56 +501,49 @@ app.get('/revenueReport', async (req, res) => {
 });
 
 
+async function callTypePercentQuery(type, client, sqlArray) {
+    const typeQuery = `
+        WITH
+            total_minutes AS (
+                SELECT SUM(duration) AS minutes FROM call_log
+            ),
+            type_minutes AS (
+                SELECT SUM(duration) AS minutes FROM call_log WHERE call_type = $1
+            )
+        SELECT (ty.minutes / t.minutes * 100) AS percent
+        FROM total_minutes t, type_minutes ty
+    `;
+    sqlArray.push(typeQuery.replace('$1', `'${type}'`));
+    return await client.query(typeQuery, [type]);
+}
+
+
 app.get('/callsReport', async (req, res) => {
     const client = await pool.connect();
     const sqlArray = [];
 
     try {
-        await client.query('BEGIN');
-        sqlArray.push('BEGIN');
+        sqlArray.push('START TRANSACTION');
+        await client.query('START TRANSACTION');
 
         // total minutes
         const minutesQuery = 'SELECT SUM(duration) AS minutes FROM call_log';
-        const total_minutes = await client.query(minutesQuery);
         sqlArray.push(minutesQuery);
+        const total_minutes = await client.query(minutesQuery);
 
         // percent minutes from local calls
-        const localQuery = `
-            WITH
-                total_minutes AS (
-                    SELECT SUM(duration) AS minutes FROM call_log
-                ),
-                local_minutes AS (
-                    SELECT SUM(duration) AS minutes FROM call_log WHERE call_type = 'Local'
-                )
-            SELECT (l.minutes / t.minutes * 100) AS percent
-            FROM total_minutes t, local_minutes l
-        `;
-        const percent_local = await client.query(localQuery);
-        sqlArray.push(localQuery);
+        const percent_local = await callTypePercentQuery('Local', client, sqlArray);
 
         // percent minutes from national calls
-        const nationalQuery = `
-            WITH
-                total_minutes AS (
-                    SELECT SUM(duration) AS minutes FROM call_log
-                ),
-                national_minutes AS (
-                    SELECT SUM(duration) AS minutes FROM call_log WHERE call_type = 'National'
-                )
-            SELECT (n.minutes / t.minutes * 100) AS percent
-            FROM total_minutes t, national_minutes n
-        `;
-        const percent_national = await client.query(nationalQuery);
-        sqlArray.push(nationalQuery);
+        const percent_national = await callTypePercentQuery('National', client, sqlArray);
 
         // average duration
         const averageQuery = 'SELECT AVG(duration) AS avg_duration FROM call_log';
-        const average_duration = await client.query(averageQuery);
         sqlArray.push(averageQuery);
+        const average_duration = await client.query(averageQuery);
 
-        await client.query('COMMIT');
-        sqlArray.push('COMMIT');
+        sqlArray.push('END TRANSACTION');
+        await client.query('END TRANSACTION');
 
         res.status(200).json({
             totalMinutes: total_minutes.rows[0].minutes || 0,
@@ -552,8 +552,8 @@ app.get('/callsReport', async (req, res) => {
             avgDuration: average_duration.rows[0].avg_duration || 0
         });
     } catch (err) {
-        await client.query('ROLLBACK');
         sqlArray.push('ROLLBACK');
+        await client.query('ROLLBACK');
 
         console.error('Error:', err);
         res.sendStatus(500);
@@ -564,46 +564,54 @@ app.get('/callsReport', async (req, res) => {
 });
 
 
+async function queryUserSearch(term, client, sqlArray) {
+    const termStr = `%${term}%`;
+
+    // get all users matching term
+    const usersQuery = `
+        WITH
+            user_minutes AS (
+                SELECT u.user_id, COALESCE(SUM(c.duration), 0) AS minutes 
+                FROM users u
+                LEFT JOIN call_log c ON c.user_id = u.user_id
+                GROUP BY u.user_id
+            )
+        SELECT
+            u.user_id AS user_id,
+            u.username AS username,
+            u.password AS password,
+            CONCAT(up.plan_type, ' ', up.payment_type) AS plan,
+            um.minutes AS total_minutes
+        FROM users u
+        JOIN user_plan up ON up.user_id = u.user_id
+        LEFT JOIN user_minutes um ON um.user_id = u.user_id
+        WHERE u.username LIKE $1
+        ORDER BY u.user_id
+        LIMIT 100
+    `;
+    sqlArray.push(usersQuery.replace('$1', `'${termStr}'`));
+    return await client.query(usersQuery, [termStr]);
+}
+
+
 // default user search
 app.get('/userSearch', async (req, res) => {
     const client = await pool.connect();
     const sqlArray = [];
 
     try {
-        await client.query('BEGIN');
-        sqlArray.push('BEGIN');
+        sqlArray.push('START TRANSACTION');
+        await client.query('START TRANSACTION');
 
-        // get all users
-        const usersQuery = `
-            WITH
-                user_minutes AS (
-                    SELECT u.user_id, COALESCE(SUM(c.duration), 0) AS minutes 
-                    FROM users u
-                    LEFT JOIN call_log c ON c.user_id = u.user_id
-                    GROUP BY u.user_id
-                )
-            SELECT
-                u.user_id AS user_id,
-                u.username AS username,
-                u.password AS password,
-                CONCAT(up.plan_type, ' ', up.payment_type) AS plan,
-                um.minutes AS total_minutes
-            FROM users u
-            JOIN user_plan up ON up.user_id = u.user_id
-            LEFT JOIN user_minutes um ON um.user_id = u.user_id
-            ORDER BY u.user_id
-            LIMIT 100
-        `;
-        const result = await client.query(usersQuery);
-        sqlArray.push(usersQuery);
+        const result = await queryUserSearch('', client, sqlArray);
 
-        await client.query('COMMIT');
-        sqlArray.push('COMMIT');
+        sqlArray.push('END TRANSACTION');
+        await client.query('END TRANSACTION');
 
         res.status(200).json(result.rows);
     } catch (err) {
-        await client.query('ROLLBACK');
         sqlArray.push('ROLLBACK');
+        await client.query('ROLLBACK');
 
         console.error('error', err);
         res.sendStatus(500);
@@ -616,46 +624,23 @@ app.get('/userSearch', async (req, res) => {
 
 // User search with term
 app.get('/userSearch/:term', async (req, res) => {
-    const term = "%" + req.params.term + "%";
+    const term = req.params.term;
     const client = await pool.connect();
     const sqlArray = [];
 
     try {
-        await client.query('BEGIN');
-        sqlArray.push('BEGIN');
+        sqlArray.push('START TRANSACTION');
+        await client.query('START TRANSACTION');
 
-        // get all users
-        const usersQuery = `
-            WITH
-                user_minutes AS (
-                    SELECT u.user_id, COALESCE(SUM(c.duration), 0) AS minutes 
-                    FROM users u
-                    LEFT JOIN call_log c ON c.user_id = u.user_id
-                    GROUP BY u.user_id
-                )
-            SELECT
-                u.user_id AS user_id,
-                u.username AS username,
-                u.password AS password,
-                CONCAT(up.plan_type, ' ', up.payment_type) AS plan,
-                um.minutes AS total_minutes
-            FROM users u
-            JOIN user_plan up ON up.user_id = u.user_id
-            LEFT JOIN user_minutes um ON um.user_id = u.user_id
-            WHERE u.username LIKE $1
-            ORDER BY u.user_id
-            LIMIT 100
-        `;
-        const result = await client.query(usersQuery, [term]); // line 648
-        sqlArray.push(usersQuery.replace('$1', term));
+        const result = await queryUserSearch(term, client, sqlArray);
 
-        await client.query('COMMIT');
-        sqlArray.push('COMMIT');
+        sqlArray.push('END TRANSACTION');
+        await client.query('END TRANSACTION');
 
         res.status(200).json(result.rows);
     } catch (err) {
-        await client.query('ROLLBACK');
         sqlArray.push('ROLLBACK');
+        await client.query('ROLLBACK');
 
         console.error('error', err);
         res.sendStatus(500);
@@ -693,8 +678,8 @@ app.get('/initializeTables', async (req, res) => {
     // run the queries in the script
     try {
         for (const query of script_blocks) {
-            await client.query(query.trim());
             sqlArray.push(query.trim());
+            await client.query(query.trim());
         }
 
         // send successful status once all queries are run
@@ -704,8 +689,8 @@ app.get('/initializeTables', async (req, res) => {
         console.error('ERROR: failed while initializing tables with message --> \n', error);
 
         if (client) {
-            await client.query('ROLLBACK');
             sqlArray.push('ROLLBACK');
+            await client.query('ROLLBACK');
         }
 
         res.status(500).json('Failed to populate tables.');
@@ -753,30 +738,30 @@ app.get('/addUser', async (req, res) => {
     const sqlArray = [];
 
     try {
-        await client.query('BEGIN');
-        sqlArray.push('BEGIN');
+        sqlArray.push('START TRANSACTION');
+        await client.query('START TRANSACTION');
 
         // get random phone_model
         const randPhoneQuery = 'SELECT model FROM phone ORDER BY RANDOM() LIMIT 1';
-        phone_model = (await client.query(randPhoneQuery)).rows[0].model;
         sqlArray.push(randPhoneQuery);
+        phone_model = (await client.query(randPhoneQuery)).rows[0].model;
 
         // get random plan
         const randPlanQuery = 'SELECT plan_type, payment_type FROM plan ORDER BY RANDOM() LIMIT 1';
-        const rand_plan = (await client.query(randPlanQuery)).rows[0];
         sqlArray.push(randPlanQuery);
+        const rand_plan = (await client.query(randPlanQuery)).rows[0];
         plan_type = rand_plan.plan_type;
         payment_type = rand_plan.payment_type;
 
         // get random bank name
         const randBankQuery = 'SELECT bank_name FROM bank ORDER BY RANDOM() LIMIT 1';
-        bank_name = (await client.query(randBankQuery)).rows[0].bank_name;
         sqlArray.push(randBankQuery);
+        bank_name = (await client.query(randBankQuery)).rows[0].bank_name;
 
         // insert user values
         const insertUserQuery = 'INSERT INTO users VALUES (default, $1, $2, $3, $4, $5, $6, $7)';
+        sqlArray.push(`INSERT INTO users VALUES (default, '${username}', '${password}', '${last_name}, ${first_name}', ${phone_number}, '${phone_model}', ${admin})`);
         const insertUserResult = await client.query(insertUserQuery, [username, password, last_name, first_name, phone_number, phone_model, admin]);
-        sqlArray.push(`INSERT INTO users VALUES (default, ${username}, ${password}, ${last_name}, ${first_name}, ${phone_number}, ${phone_model}, ${admin})`);
 
         // get user_id
         const idQuery = 'SELECT user_id FROM users WHERE username = $1';
@@ -784,17 +769,131 @@ app.get('/addUser', async (req, res) => {
 
         // insert plan values
         const insertPlanQuery = 'INSERT INTO user_plan VALUES ($1, $2, $3)';
+        sqlArray.push(`INSERT INTO user_plan VALUES (${user_id}, '${plan_type}', '${payment_type}')`);
         const insertPlanResult = await client.query(insertPlanQuery, [user_id, plan_type, payment_type]);
-        sqlArray.push(`INSERT INTO user_plan VALUES (${user_id}, ${plan_type}, ${payment_type})`);
 
         // insert bank values
-        // TODO!!
+        const insertBankQuery = 'INSERT INTO bank VALUES ($1, $2, $3, $4)';
+        sqlArray.push(`INSERT INTO bank VALUES (${user_id}, ${bank_account_num}, ${card_num}, '${bank_name}')`);
+        const insertBankResult = await client.query(insertBankQuery, [user_id, bank_account_num, card_num, bank_name]);
 
-        await client.query('COMMIT');
-        sqlArray.push('COMMIT');
+        sqlArray.push('END TRANSACTION');
+        await client.query('END TRANSACTION');
+
+        res.sendStatus(200);
     } catch (err) {
-        await client.query('ROLLBACK');
         sqlArray.push('ROLLBACK');
+        await client.query('ROLLBACK');
+
+        console.error('error', err);
+        res.sendStatus(500);
+    } finally {
+        client.release();
+        saveSQL(sqlArray);
+    }
+});
+
+
+// from https://stackoverflow.com/a/29494612
+async function twoDecimalRound(num) {
+    return Math.round( num * 1e2 ) / 1e2;
+}
+
+
+// return a random weight duration that is not 0
+async function weightedRandomDuration() {
+    const maxVals = [10, 60, 200, 400];
+    const cdf = [0.4, 0.7, 0.9, 1];
+
+    return twoDecimalRound(0.01 + Math.random() * maxVals[cdf.findIndex(el => Math.random() <= el)]);
+}
+
+
+async function queryMonth(client, sqlArray) {
+    const currMonthQuery = `
+            SELECT (due_date - INTERVAL '1 month') AS date 
+            FROM bill
+            GROUP BY due_date
+            ORDER BY due_date DESC
+            LIMIT 1
+        `;
+    sqlArray.push(currMonthQuery);
+    return (await client.query(currMonthQuery)).rows[0].date;
+}
+
+
+app.get('/getMonth', async (req, res) => {
+    const client = await pool.connect();
+    const sqlArray = [];
+
+    try {
+        sqlArray.push('START TRANSACTION');
+        await client.query('START TRANSACTION');
+
+        const currMonth = await queryMonth(client, sqlArray);
+
+        sqlArray.push('END TRANSACTION');
+        await client.query('END TRANSACTION');
+
+        res.status(200).json(currMonth);
+    } catch (err) {
+        sqlArray.push('ROLLBACK');
+        await client.query('ROLLBACK');
+
+        console.error('error', err);
+        res.sendStatus(500);
+    } finally {
+        client.release();
+        saveSQL(sqlArray);
+    }
+});
+
+
+app.get('/addCall', async (req, res) => {
+    // generate call values
+    let user_id; // get random user from database
+    const duration = Number(await weightedRandomDuration());
+    let datetime; // construct the datetime
+    let date; // get current month from database
+    let day; // get random day based on month
+    const days_array = [31,29,31,30,31,30,31,31,30,31,30,31]; // for how many days in each month
+    const time = `${Math.floor(Math.random() * 24)}:${Math.floor(Math.random() * 60)}:${Math.floor(Math.random() * 60)}`;
+    const call_type = (Math.random() < 0.7 ? 'Local' : 'National');
+    const num_called = await randInt(10);
+
+    const client = await pool.connect();
+    const sqlArray = [];
+
+    try {
+        sqlArray.push('START TRANSACTION');
+        await client.query('START TRANSACTION');
+
+        // get random user_id
+        const randUserQuery = 'SELECT user_id FROM users ORDER BY RANDOM() LIMIT 1';
+        sqlArray.push(randUserQuery);
+        user_id = (await client.query(randUserQuery)).rows[0].user_id;
+
+        // get current year and month
+        date = await queryMonth(client, sqlArray);
+
+        // get random day in the month
+        day = Math.floor(Math.random() * (days_array[date.getMonth()])) + 1;
+
+        // concatenate the timestamp
+        datetime = `${date.getFullYear()}-${date.getMonth()}-${day} ${time}`;
+
+        // insert values
+        const insertCallQuery = 'INSERT INTO call_log VALUES (default, $1, $2, $3, $4, $5)';
+        sqlArray.push(`INSERT INTO call_log VALUES (default, ${user_id}, ${duration}, '${datetime}', '${call_type}', ${num_called})`);
+        const insertCallResult = await client.query(insertCallQuery, [user_id, duration, datetime, call_type, num_called]);
+
+        sqlArray.push('END TRANSACTION');
+        await client.query('END TRANSACTION');
+
+        res.sendStatus(200);
+    } catch (err) {
+        sqlArray.push('ROLLBACK');
+        await client.query('ROLLBACK');
 
         console.error('error', err);
         res.sendStatus(500);

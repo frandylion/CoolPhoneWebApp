@@ -128,10 +128,12 @@
         </thead>
         <tbody id="billTableBody"></tbody>
     </table>
-    <button type="button" onClick="payBalance()">Pay Balance</button>
 
     <br>
-    <br>
+
+    <button type="button" onClick="payBalance()">Pay Balance</button>
+
+    <br><br>
 
     <h3>Transaction History</h3>
     <table border="1">
@@ -146,7 +148,6 @@
         <tbody id="transactionTableBody"></tbody>
     </table>
 
-    <br>
     <br>
 
     <h3>Call Log</h3>
@@ -169,8 +170,8 @@
     <h2>Admin Access</h2>
     <form action="/adminView" method="post">
         <input type="submit" value="Access Admin Portal">
+        <p>Accessing the admin portal requires admin priveleges.</p>
     </form>
-    <p>Accessing the admin portal requires admin priveleges.</p>
 
 </body>
 </html>

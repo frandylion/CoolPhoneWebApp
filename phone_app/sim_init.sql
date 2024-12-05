@@ -1,5 +1,5 @@
 -- Initialization script for the phone data tables.
-BEGIN;
+START TRANSACTION;
 
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS user_plan CASCADE;
@@ -96,7 +96,7 @@ INSERT INTO phone VALUES ('HMD 110', 'Nokia');
 INSERT INTO phone VALUES ('HMD 3210', 'Nokia');
 
 
--- call_log
+-- 
 CREATE TABLE call_log (
 call_id SERIAL,
 user_id INT,
@@ -291,16 +291,6 @@ INSERT INTO transaction VALUES (7, '2024-11-03');
 INSERT INTO transaction VALUES (8, '2024-11-01');
 INSERT INTO transaction VALUES (9, '2024-11-04');
 INSERT INTO transaction VALUES (10, '2024-11-05');
--- INSERT INTO transaction VALUES (11, '2024-12-02');
--- INSERT INTO transaction VALUES (12, '2024-12-03');
--- INSERT INTO transaction VALUES (13, '2024-12-01');
--- INSERT INTO transaction VALUES (14, '2024-12-04');
--- INSERT INTO transaction VALUES (15, '2024-12-05');
--- INSERT INTO transaction VALUES (16, '2024-12-02');
--- INSERT INTO transaction VALUES (17, '2024-12-03');
--- INSERT INTO transaction VALUES (18, '2024-12-01');
--- INSERT INTO transaction VALUES (19, '2024-12-04');
--- INSERT INTO transaction VALUES (20, '2024-12-05');
 
 
 -- bill
@@ -335,4 +325,4 @@ INSERT INTO bill VALUES (default, 9, 27.94, '2024-12-05', false);
 INSERT INTO bill VALUES (default, 10, 19.64, '2024-12-05', false);
 
 
-COMMIT;
+END TRANSACTION;
