@@ -14,6 +14,7 @@ const public_dir = 'public';
 const login_page = 'login.html';
 const home_page = 'home.html';
 const admin_page = 'admin.html';
+const readme_page = '../../README.md';
 const sql_log_path = 'log.sql';
 const table_init_script = 'sim_init.sql';
 
@@ -118,6 +119,10 @@ app.get('/admin', async (req, res) => {
         res.send('You must be an admin to access this page.');
         res.end();
     }
+});
+
+app.get('/README', async (req, res) => {
+    res.sendFile(path.join(__dirname, public_dir, readme_page));
 });
 
 
