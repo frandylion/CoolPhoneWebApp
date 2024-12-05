@@ -115,19 +115,21 @@
 
     <h2 id="dueBalance">Outstanding balance: $0.00</h2>
     <h3>Bills</h3>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Bill ID</th>
-                <th>Amount</th>
-                <th>Call Minutes</th>
-                <th>MiB Data Used</th>
-                <th>Date Due</th>
-                <th>Paid</th>
-            </tr>
-        </thead>
-        <tbody id="billTableBody"></tbody>
-    </table>
+    <div style="max-height: 250px; overflow-y: scroll; border: solid; width: max-content;">
+        <table border="1">
+            <thead style="top: 0;z-index: 2;position: sticky;background-color: white;">
+                <tr>
+                    <th>Bill ID</th>
+                    <th>Amount</th>
+                    <th>Call Minutes</th>
+                    <th>MiB Data Used</th>
+                    <th>Date Due</th>
+                    <th>Paid</th>
+                </tr>
+            </thead>
+            <tbody id="billTableBody"></tbody>
+        </table>
+    </div>
 
     <br>
 
@@ -136,33 +138,37 @@
     <br><br>
 
     <h3>Transaction History</h3>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Bill ID</th>
-                <th>Amount</th>
-                <th>Date Paid</th>
-                <th>Date Due</th>
-            </tr>
-        </thead>
-        <tbody id="transactionTableBody"></tbody>
-    </table>
+    <div style="max-height: 250px; overflow-y: scroll; border: solid; width: max-content;">
+        <table border="1">
+            <thead style="top: 0;z-index: 2;position: sticky;background-color: white;">
+                <tr>
+                    <th>Bill ID</th>
+                    <th>Amount</th>
+                    <th>Date Paid</th>
+                    <th>Date Due</th>
+                </tr>
+            </thead>
+            <tbody id="transactionTableBody"></tbody>
+        </table>
+    </div>
 
     <br>
 
     <h3>Call Log</h3>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Call ID</th>
-                <th>Timestamp</th>
-                <th>Minutes</th>
-                <th>Type</th>
-                <th>Cost</th>
-            </tr>
-        </thead>
-        <tbody id="callTableBody"></tbody>
-    </table>
+    <div style="max-height: 250px; overflow-y: scroll; border: solid; width: max-content;">
+        <table border="1">
+            <thead style="top: 0;z-index: 2;position: sticky;background-color: white;">
+                <tr>
+                    <th>Call ID</th>
+                    <th>Timestamp</th>
+                    <th>Minutes</th>
+                    <th>Type</th>
+                    <th>Cost</th>
+                </tr>
+            </thead>
+            <tbody id="callTableBody"></tbody>
+        </table>
+    </div>
 
     <br>
     <hr>

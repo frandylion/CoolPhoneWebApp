@@ -71,6 +71,7 @@
                         <td>${user.password}</td>
                         <td>${user.plan}</td>
                         <td>${Number(user.total_minutes).toFixed(2)} minutes</td>
+                        <td>${user.total_data} MiB</td>
                     </tr>
                 `;
                 table.innerHTML += row;
@@ -110,11 +111,12 @@
         }
 
         async function payAllBills() {
-
+            await fetch(`http://localhost:3000/payAllBills`);
+            getRevenueReport();
         }
 
         async function nextMonth() {
-            
+
         }
 
         async function getMonth() {
@@ -184,18 +186,27 @@
     <input type='text' id='searchInput' onchange='userSearch()'>
     <label>Search for a user by username (ENTER to search):</label>
     <br><br>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>User ID</th>
-                <th>Username</th>
-                <th>Password</th>
-                <th>Plan</th>
-                <th>Total Minutes</th>
-            </tr>
-        </thead>
-        <tbody id="userTableBody"></tbody>
-    </table>
+    <div style="max-height: 250px; overflow-y: scroll; border: solid; width: max-content;">
+        <table border="1">
+            <thead style="top: 0;z-index: 2;position: sticky;background-color: white;">
+                <tr>
+                    <th>User ID</th>
+                    <th>Username</th>
+                    <th>Password</th>
+                    <th>Plan</th>
+                    <th>Total Minutes</th>
+                    <th>Total Data</th>
+                </tr>
+            </thead>
+            <tbody id="userTableBody"></tbody>
+        </table>
+    </div>
+
+    <br><br>
+
+    <form action="/home" method="get">
+        <input type="submit" value="Return Home">
+    </form>
 
     <br>
     <hr>

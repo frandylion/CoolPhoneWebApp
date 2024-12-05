@@ -3,7 +3,7 @@
 const express = require('express');
 const session = require('express-session');
 const bodyParser = require('body-parser');
-const { Pool } = require('pg');
+const pg = require('pg');
 const path = require('path');
 const cors = require('cors');
 const fsp = require('fs').promises;
@@ -39,7 +39,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, public_dir)));
 
-const pool = new Pool({
+const pool = new pg.Pool({
     user: 'dbs05',
     host: 'localhost',
     database: 'phone',
@@ -389,7 +389,7 @@ app.get('/user', async (req, res) => {
         sqlArray.push('START TRANSACTION');
         await client.query('START TRANSACTION');
 
-        const userQuery = 'SELECT * FROM users WHERE user_id = $1';
+        const userQuery = 'SELECT * FROM users WHERE user_id = $1 LIMIT 1';
         sqlArray.push(userQuery.replace('$1', user_id.toString()));
         const userResult = await client.query(userQuery, [user_id]);
 
@@ -417,7 +417,7 @@ app.post('/adminView', async (req, res) => {
         sqlArray.push('START TRANSACTION');
         await client.query('START TRANSACTION');
 
-        const adminQuery = 'SELECT * FROM users WHERE user_id = $1 AND admin = true';
+        const adminQuery = 'SELECT * FROM users WHERE user_id = $1 AND admin = true LIMIT 1';
         sqlArray.push(adminQuery.replace('$1', user_id.toString()));
         const adminResult = await client.query(adminQuery, [user_id]);
 
@@ -575,16 +575,24 @@ async function queryUserSearch(term, client, sqlArray) {
                 FROM users u
                 LEFT JOIN call_log c ON c.user_id = u.user_id
                 GROUP BY u.user_id
+            ),
+            user_data AS (
+                SELECT u.user_id, COALESCE(SUM(d.data_used_mib), 0) AS data
+                FROM users u
+                LEFT JOIN data_log d ON d.user_id = u.user_id
+                GROUP BY u.user_id
             )
         SELECT
             u.user_id AS user_id,
             u.username AS username,
             u.password AS password,
             CONCAT(up.plan_type, ' ', up.payment_type) AS plan,
-            um.minutes AS total_minutes
+            um.minutes AS total_minutes,
+            ud.data as total_data
         FROM users u
         JOIN user_plan up ON up.user_id = u.user_id
         LEFT JOIN user_minutes um ON um.user_id = u.user_id
+        LEFT JOIN user_data ud ON ud.user_id = u.user_id
         WHERE u.username LIKE $1
         ORDER BY u.user_id
         LIMIT 100
@@ -764,7 +772,7 @@ app.get('/addUser', async (req, res) => {
         const insertUserResult = await client.query(insertUserQuery, [username, password, last_name, first_name, phone_number, phone_model, admin]);
 
         // get user_id
-        const idQuery = 'SELECT user_id FROM users WHERE username = $1';
+        const idQuery = 'SELECT user_id FROM users WHERE username = $1 LIMIT 1';
         const user_id = (await client.query(idQuery, [username])).rows[0].user_id;
 
         // insert plan values
@@ -880,7 +888,7 @@ app.get('/addCall', async (req, res) => {
         day = Math.floor(Math.random() * (days_array[date.getMonth()])) + 1;
 
         // concatenate the timestamp
-        datetime = `${date.getFullYear()}-${date.getMonth()}-${day} ${time}`;
+        datetime = `${date.getFullYear()}-${date.getMonth()+1}-${day} ${time}`;
 
         // insert values
         const insertCallQuery = 'INSERT INTO call_log VALUES (default, $1, $2, $3, $4, $5)';
@@ -902,6 +910,96 @@ app.get('/addCall', async (req, res) => {
         saveSQL(sqlArray);
     }
 });
+
+
+// pay all bills for all users
+app.get('/payAllBills', async (req, res) => {
+    const client = await pool.connect();
+    const sqlArray = [];
+
+    try {
+        sqlArray.push('START TRANSACTION');
+        await client.query('START TRANSACTION');
+
+        // create transactions
+        const transactionQuery = `
+            INSERT INTO transaction (bill_id, date_paid)
+            SELECT bill_id, CURRENT_DATE
+            FROM bill
+            WHERE paid = false
+        `;
+        sqlArray.push(transactionQuery);
+        const transactionResult = await client.query(transactionQuery);
+
+        // set bills to paid
+        const paidQuery = `
+            UPDATE bill
+            SET paid = true
+            WHERE paid = false
+        `;
+        sqlArray.push(paidQuery);
+        const paidResult = await client.query(paidQuery);
+
+        sqlArray.push('END TRANSACTION');
+        await client.query('END TRANSACTION');
+
+        res.sendStatus(200);
+    } catch (err) {
+        sqlArray.push('ROLLBACK');
+        await client.query('ROLLBACK');
+
+        console.error('error', err);
+        res.sendStatus(500);
+    } finally {
+        client.release();
+        saveSQL(sqlArray);
+    }
+});
+
+
+// // generate all bills
+// app.get('/generateBills', async (req, res) => {
+//     const client = await pool.connect();
+//     const sqlArray = [];
+
+//     try {
+//         sqlArray.push('START TRANSACTION');
+//         await client.query('START TRANSACTION');
+
+//         // create transactions
+//         const transactionQuery = `
+//             INSERT INTO transaction (bill_id, date_paid)
+//             SELECT bill_id, CURRENT_DATE
+//             FROM bill
+//             WHERE paid = false
+//         `;
+//         sqlArray.push(transactionQuery);
+//         const transactionResult = await client.query(transactionQuery);
+
+//         // set bills to paid
+//         const paidQuery = `
+//             UPDATE bill
+//             SET paid = true
+//             WHERE paid = false
+//         `;
+//         sqlArray.push(paidQuery);
+//         const paidResult = await client.query(paidQuery);
+
+//         sqlArray.push('END TRANSACTION');
+//         await client.query('END TRANSACTION');
+
+//         res.sendStatus(200);
+//     } catch (err) {
+//         sqlArray.push('ROLLBACK');
+//         await client.query('ROLLBACK');
+
+//         console.error('error', err);
+//         res.sendStatus(500);
+//     } finally {
+//         client.release();
+//         saveSQL(sqlArray);
+//     }
+// });
 
 
 //  ######################
